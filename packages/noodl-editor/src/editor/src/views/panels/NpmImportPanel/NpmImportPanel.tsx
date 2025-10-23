@@ -134,9 +134,8 @@ export function NpmImportPanel() {
               value={command}
               onChange={handleCommandChange}
               placeholder="npm install @radix-ui/react-dialog&#10;npm i react-icons&#10;yarn add antd"
-              rows={4}
-              disabled={isInstalling}
-              style={{
+              isDisabled={isInstalling}
+              UNSAFE_style={{
                 fontFamily: 'monospace',
                 fontSize: '13px'
               }}
