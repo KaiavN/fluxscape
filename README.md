@@ -34,6 +34,12 @@ $ npm run dev
 $ npm run test:editor
 ```
 
+## macOS Builds
+
+For information about code signing and notarization on macOS, see [docs/MACOS_SIGNING.md](docs/MACOS_SIGNING.md).
+
+**Quick note for local testing:** If you build without Apple Developer credentials, see the workaround instructions in the signing guide to open the unsigned app.
+
 ## Licenses
 This repository contains two different licenses for different parts of the Fluxscape platform.
 
