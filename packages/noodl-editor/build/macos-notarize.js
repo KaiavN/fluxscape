@@ -21,15 +21,20 @@ module.exports = async function (params) {
   console.log(`Notarizing ${appId} found at ${appPath}`);
 
   try {
-    const electron_notarize = require('electron-notarize');
-    await electron_notarize.notarize({
+    const { notarize } = require('@electron/notarize');
+    await notarize({
       appBundleId: appId,
       appPath: appPath,
       appleId: process.env.appleId,
       appleIdPassword: process.env.appleIdPassword
     });
   } catch (error) {
-    console.error(error);
+    const errorMessage = error.message || error.toString();
+    if (errorMessage.includes('authentication') || errorMessage.includes('credentials') || errorMessage.includes('password')) {
+      console.error('Notarization failed: Invalid Apple ID credentials');
+    } else {
+      console.error(error);
+    }
   }
 
   console.log(`Done notarizing ${appId}`);
