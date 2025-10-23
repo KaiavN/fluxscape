@@ -3,6 +3,7 @@ import { ChatHistory, ChatMessageType } from '@noodl-models/AiAssistant/ChatHist
 import { Ai } from '@noodl-models/AiAssistant/context/ai-api';
 import { AiCopilotChatMessage } from '@noodl-models/AiAssistant/interfaces';
 import { NodeGraphModel } from '@noodl-models/nodegraphmodel';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export class ReActContext {
   snowflakeId: string;
@@ -39,7 +40,7 @@ export abstract class ReActAgent<TParams = unknown> {
         ...history
       ],
       provider: {
-        model: 'gpt-4',
+        model: OpenAiStore.getModel(),
         temperature: 0
       },
       onStream: (_, text) => {
