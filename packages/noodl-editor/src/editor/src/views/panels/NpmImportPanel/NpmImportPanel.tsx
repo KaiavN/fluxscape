@@ -5,15 +5,17 @@
 
 import React, { useState } from 'react';
 
-import { Button, ButtonSize, ButtonVariant } from '@noodl-core-ui/components/inputs/Button';
+import { PrimaryButton, PrimaryButtonSize, PrimaryButtonVariant } from '@noodl-core-ui/components/inputs/PrimaryButton';
 import { TextArea } from '@noodl-core-ui/components/inputs/TextArea';
 import { Box } from '@noodl-core-ui/components/layout/Box';
 import { VStack } from '@noodl-core-ui/components/layout/Stack';
 import { BasePanel } from '@noodl-core-ui/components/sidebar/BasePanel';
 import { Text, TextSize, TextType } from '@noodl-core-ui/components/typography/Text';
+import { FeedbackType } from '@noodl-constants/FeedbackType';
 
 import { NpmPackageImporter, ImportStatus } from '../../../models/NpmPackageImporter';
-import { ToastLayer, ToastType } from '../../ToastLayer/ToastLayer';
+import { ToastLayer } from '../../ToastLayer/ToastLayer';
+import { ToastType } from '../../ToastLayer/components/ToastCard/ToastCard';
 
 type InstallationStatus = 'idle' | 'validating' | 'installing' | 'discovering' | 'categorizing' | 'complete' | 'error';
 
@@ -81,9 +83,8 @@ export function NpmImportPanel() {
 
       if (result.success) {
         // Show success toast
-        ToastLayer.showToast(
+        ToastLayer.showSuccess(
           `Successfully imported ${result.componentCount} component(s) from ${result.packages?.join(', ')}`,
-          ToastType.Success
         );
 
         // Update installed packages list
@@ -101,9 +102,8 @@ export function NpmImportPanel() {
       } else {
         // Show error
         setErrorMessage(result.error || 'Installation failed');
-        ToastLayer.showToast(
+        ToastLayer.showError(
           `Failed to install package: ${result.error}`,
-          ToastType.Error
         );
       }
 
@@ -111,7 +111,7 @@ export function NpmImportPanel() {
       const message = error instanceof Error ? error.message : 'Unknown error occurred';
       setErrorMessage(message);
       setStatus('error');
-      ToastLayer.showToast(`Installation error: ${message}`, ToastType.Error);
+      ToastLayer.showError(`Installation error: ${message}`);
     }
   };
 
@@ -134,9 +134,8 @@ export function NpmImportPanel() {
               value={command}
               onChange={handleCommandChange}
               placeholder="npm install @radix-ui/react-dialog&#10;npm i react-icons&#10;yarn add antd"
-              rows={4}
-              disabled={isInstalling}
-              style={{
+              isDisabled={isInstalling}
+              UNSAFE_style={{
                 fontFamily: 'monospace',
                 fontSize: '13px'
               }}
@@ -146,7 +145,7 @@ export function NpmImportPanel() {
           {/* Error message */}
           {errorMessage && (
             <Box>
-              <Text size={TextSize.Medium} type={TextType.Danger}>
+              <Text size={TextSize.Medium} textType={FeedbackType.Danger}>
                 {errorMessage}
               </Text>
             </Box>
@@ -154,21 +153,20 @@ export function NpmImportPanel() {
 
           {/* Install button */}
           <Box>
-            <Button
-              variant={ButtonVariant.Primary}
-              size={ButtonSize.Default}
+            <PrimaryButton
+              label={isInstalling ? 'Installing...' : 'Install & Discover Components'}
+              variant={PrimaryButtonVariant.Cta}
+              size={PrimaryButtonSize.Default}
               onClick={handleInstall}
               isDisabled={isInstalling || !command.trim()}
-            >
-              {isInstalling ? 'Installing...' : 'Install & Discover Components'}
-            </Button>
+            />
           </Box>
 
           {/* Status display */}
           {isInstalling && (
             <Box hasTopSpacing={2}>
               <VStack hasSpacing>
-                <Text size={TextSize.Medium} type={TextType.Highlighted}>
+                <Text size={TextSize.Medium} textType={TextType.Proud}>
                   {statusMessage}
                 </Text>
                 {statusDetails && (
@@ -177,7 +175,7 @@ export function NpmImportPanel() {
                   </Text>
                 )}
                 {/* Progress bar */}
-                <Box style={{
+                <Box UNSAFE_style={{
                   width: '100%',
                   height: '4px',
                   backgroundColor: 'var(--color-background-tertiary)',
@@ -198,7 +196,7 @@ export function NpmImportPanel() {
           {/* Success message */}
           {status === 'complete' && (
             <Box hasTopSpacing={2}>
-              <Text size={TextSize.Medium} type={TextType.Success}>
+              <Text size={TextSize.Medium} textType={FeedbackType.Success}>
                 ✓ {statusMessage}
               </Text>
             </Box>
@@ -208,11 +206,11 @@ export function NpmImportPanel() {
           {installedPackages.length > 0 && (
             <Box hasTopSpacing={4}>
               <VStack hasSpacing>
-                <Text size={TextSize.Default} type={TextType.Highlighted}>
+                <Text size={TextSize.Default} textType={TextType.Proud}>
                   Installed Packages
                 </Text>
                 {installedPackages.map((pkg, index) => (
-                  <Box key={index} style={{
+                  <Box key={index} UNSAFE_style={{
                     padding: '8px',
                     backgroundColor: 'var(--color-background-secondary)',
                     borderRadius: '4px'
