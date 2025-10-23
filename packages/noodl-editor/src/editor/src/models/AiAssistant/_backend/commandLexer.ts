@@ -47,13 +47,39 @@ export class ReActCommandLexer {
 
   public append(ch: string): ReActCommand[] {
     this._buffer += ch;
-    const commandCount = this.commands.length;
+    const previousCommands = this._commands.slice(); // shallow copy
+    const previousCount = previousCommands.length;
+    
     this.tokenize(this._buffer);
-    // TODO: Check if any of the command content changed
-    if (this.commands.length > commandCount) {
-      return this.commands.slice(commandCount - 1);
+    
+    const changedCommands: ReActCommand[] = [];
+    
+    // Check for new commands
+    if (this.commands.length > previousCount) {
+      changedCommands.push(...this.commands.slice(previousCount));
     }
-    return [];
+    
+    // Check for changed content in existing commands
+    const checkLength = Math.min(previousCount, this.commands.length);
+    for (let i = 0; i < checkLength; i++) {
+      if (this.hasCommandChanged(previousCommands[i], this.commands[i])) {
+        changedCommands.push(this.commands[i]);
+      }
+    }
+    
+    return changedCommands;
+  }
+
+  /**
+   * Check if command content has changed
+   */
+  private hasCommandChanged(oldCmd: ReActCommand, newCmd: ReActCommand): boolean {
+    if (oldCmd.type !== newCmd.type) return true;
+    if (oldCmd.args.length !== newCmd.args.length) return true;
+    for (let i = 0; i < oldCmd.args.length; i++) {
+      if (oldCmd.args[i] !== newCmd.args[i]) return true;
+    }
+    return false;
   }
 
   public tokenize(input: string): ReActCommand[] {
