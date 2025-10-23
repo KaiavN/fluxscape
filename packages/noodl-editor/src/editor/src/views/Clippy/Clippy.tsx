@@ -63,6 +63,7 @@ export default function Clippy() {
   const promptToNode = promptToNodeCommands.filter(commandFilter);
   const copilotNodes = copilotNodeCommands.filter(commandFilter);
   const comingSoonItems = comingSoonCommands.filter(commandFilter);
+  const disabledDueToGpt3Items = []; 
 
   const ALL_OPTIONS = [...promptToNode, ...copilotNodes];
 
