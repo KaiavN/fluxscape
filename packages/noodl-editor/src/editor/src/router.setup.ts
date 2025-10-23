@@ -16,7 +16,6 @@ import { EditorSettingsPanel } from './views/panels/EditorSettingsPanel/EditorSe
 import { FileExplorerPanel } from './views/panels/FileExplorerPanel';
 import { NodeReferencesPanel_ID } from './views/panels/NodeReferencesPanel';
 import { NodeReferencesPanel } from './views/panels/NodeReferencesPanel/NodeReferencesPanel';
-import { NpmImportPanel } from './views/panels/NpmImportPanel';
 import { ProjectSettingsPanel } from './views/panels/ProjectSettingsPanel/ProjectSettingsPanel';
 import { PropertyEditor } from './views/panels/propertyeditor';
 import { SearchPanel } from './views/panels/search-panel/search-panel';
@@ -155,14 +154,6 @@ export function installSidePanel({ isLesson }: SetupEditorOptions) {
     placement: 'bottom',
     icon: IconName.SlidersHorizontal,
     panel: EditorSettingsPanel
-  });
-
-  SidebarModel.instance.register({
-    id: 'npm-packages',
-    name: 'NPM Packages',
-    order: 10,
-    icon: IconName.Package,
-    panel: NpmImportPanel
   });
 }
 
