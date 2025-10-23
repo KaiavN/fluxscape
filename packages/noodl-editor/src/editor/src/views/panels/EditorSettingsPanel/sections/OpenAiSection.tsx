@@ -51,7 +51,6 @@ export function OpenAiSection() {
               <PropertyPanelRow label="Model ID" isChanged={false}>
                 <PropertyPanelTextInput
                   value={model}
-                  placeholder="openai/gpt-4"
                   onChange={(value: string) => {
                     setModel(value);
                     OpenAiStore.setModel(value);
