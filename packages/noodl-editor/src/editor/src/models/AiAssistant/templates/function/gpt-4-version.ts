@@ -10,6 +10,7 @@ import {
   FUNCTION_CODE_QUESTION
 } from '@noodl-models/AiAssistant/templates/function';
 import { extractCodeBlockWithText, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
+import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
 import { guid } from '@noodl-utils/utils';
 
 export async function execute({ node, chatHistory, chatStream, chatStreamXml }: IAiCopilotContext) {
@@ -145,7 +146,12 @@ A["FUNCTION"]`;
 
   const messages = currentScript
     ? [
-        // TODO: Enable this again later, ...history.slice(0, -1),
+        ...truncateHistoryForTokenLimit(
+          history.slice(0, -1),
+          'gpt-4',
+          FUNCTION_CODE_CONTEXT_EDIT.length,
+          currentScript.length
+        ),
         {
           role: 'system',
           content: FUNCTION_CODE_CONTEXT_EDIT.replace('%{code}%', currentScript)
