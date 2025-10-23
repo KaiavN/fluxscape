@@ -2,6 +2,7 @@ import { ChatMessageType } from '@noodl-models/AiAssistant/ChatHistory';
 import { extractDatabaseSchema } from '@noodl-models/AiAssistant/DatabaseSchemaExtractor';
 import { AiNodeTemplate, IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
 import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export const template: AiNodeTemplate = {
   type: 'green',
@@ -49,11 +50,12 @@ export const template: AiNodeTemplate = {
     }));
 
     const currentScript = node.getParameter('functionScript');
+    const modelName = OpenAiStore.getModel();
     const messages = currentScript
       ? [
           ...truncateHistoryForTokenLimit(
             history.slice(0, -1),
-            'gpt-4',
+            modelName,
             FUNCTION_CRUD_CONTEXT_EDIT.replace('%{database-schema}%', dbCollectionsSource).replace('%{code}%', currentScript).length,
             currentScript.length
           ),
@@ -77,9 +79,7 @@ export const template: AiNodeTemplate = {
     const fullText = await chatStreamXml({
       messages,
       provider: {
-        model: 'gpt-4',
-        // model: 'gpt-3.5-turbo',
-        // The next context doesnt work with GPT-3.5
+        model: modelName,
         temperature: 0.5,
         max_tokens: 2048
       },
