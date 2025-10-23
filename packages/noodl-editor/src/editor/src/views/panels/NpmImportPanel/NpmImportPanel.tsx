@@ -145,7 +145,7 @@ export function NpmImportPanel() {
           {/* Error message */}
           {errorMessage && (
             <Box>
-              <Text size={TextSize.Medium} type={TextType.Danger}>
+              <Text size={TextSize.Medium} textType={FeedbackType.Danger}>
                 {errorMessage}
               </Text>
             </Box>
@@ -167,7 +167,7 @@ export function NpmImportPanel() {
           {isInstalling && (
             <Box hasTopSpacing={2}>
               <VStack hasSpacing>
-                <Text size={TextSize.Medium} type={TextType.Highlighted}>
+                <Text size={TextSize.Medium} textType={TextType.Proud}>
                   {statusMessage}
                 </Text>
                 {statusDetails && (
@@ -197,7 +197,7 @@ export function NpmImportPanel() {
           {/* Success message */}
           {status === 'complete' && (
             <Box hasTopSpacing={2}>
-              <Text size={TextSize.Medium} type={TextType.Success}>
+              <Text size={TextSize.Medium} textType={FeedbackType.Success}>
                 ✓ {statusMessage}
               </Text>
             </Box>
@@ -207,7 +207,7 @@ export function NpmImportPanel() {
           {installedPackages.length > 0 && (
             <Box hasTopSpacing={4}>
               <VStack hasSpacing>
-                <Text size={TextSize.Default} type={TextType.Highlighted}>
+                <Text size={TextSize.Default} textType={TextType.Proud}>
                   Installed Packages
                 </Text>
                 {installedPackages.map((pkg, index) => (
