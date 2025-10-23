@@ -188,7 +188,10 @@ export class NpmPackageImporter {
         percent: 85
       });
 
-      NodeLibraryImporter.instance.registerNpmComponents(categorizedComponents);
+      // TODO: Implement registerNpmComponents() method in NodeLibraryImporter
+      // This requires completing the component registration system integration
+      // NodeLibraryImporter.instance.registerNpmComponents(categorizedComponents);
+      console.log('[npm-import] Component registration not yet implemented. Discovered:', categorizedComponents.length);
 
       // Step 6: Complete
       onProgress({
