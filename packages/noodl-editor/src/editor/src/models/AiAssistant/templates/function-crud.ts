@@ -1,10 +1,7 @@
 import { ChatMessageType } from '@noodl-models/AiAssistant/ChatHistory';
 import { extractDatabaseSchema } from '@noodl-models/AiAssistant/DatabaseSchemaExtractor';
 import { AiNodeTemplate, IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
-<<<<<<< HEAD
 import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
-=======
->>>>>>> origin/main
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export const template: AiNodeTemplate = {
@@ -82,11 +79,7 @@ export const template: AiNodeTemplate = {
     const fullText = await chatStreamXml({
       messages,
       provider: {
-<<<<<<< HEAD
         model: modelName,
-=======
-        model: OpenAiStore.getModel(),
->>>>>>> origin/main
         temperature: 0.5,
         max_tokens: 2048
       },
