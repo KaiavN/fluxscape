@@ -51,7 +51,7 @@ export async function saveImageDataToDisk(imageData: { type: string; data: Buffe
 
 export async function makeChatRequest(model: string, messages: unknown[]) {
   const OPENAI_API_KEY = OpenAiStore.getApiKey();
-  const response = await fetch(`https://api.openai.com/v1/chat/completions`, {
+  const response = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -70,14 +70,7 @@ export async function makeChatRequest(model: string, messages: unknown[]) {
     console.error(json.error);
     return null;
   } else {
-    const promptTokenCost = model === 'gpt-4' ? 0.03 : 0.002;
-    const completionTokenCost = model === 'gpt-4' ? 0.06 : 0.002;
-    let cost =
-      (json.usage.completion_tokens * completionTokenCost) / 1000 + (json.usage.prompt_tokens * promptTokenCost) / 1000;
-
-    cost = Math.round(cost * 10000) / 10000; //round to 4 decimals
-
-    console.log('prompt cost', `$${cost}`);
+    console.log('API request completed', json.usage);
 
     return {
       content: json.choices[0].message.content,
