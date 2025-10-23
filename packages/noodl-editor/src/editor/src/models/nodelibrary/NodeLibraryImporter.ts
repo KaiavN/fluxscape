@@ -9,6 +9,7 @@ import {
 } from '@noodl-models/nodelibrary/NodeLibraryData';
 
 import { EventDispatcher } from '../../../../shared/utils/EventDispatcher';
+import { CategorizedComponent } from '../utils/ComponentCategorizer';
 
 /**
  * Keep track of all the clients and their nodes.
@@ -268,5 +269,124 @@ export class NodeLibraryImporter {
     mergeInByName(library.projectsettings.dynamicports, this.currentNodeLibrary.projectsettings.dynamicports);
 
     return updated;
+  }
+
+  /**
+   * Register npm-imported components into node library
+   * 
+   * @param components - Array of categorized components from npm packages
+   */
+  public registerNpmComponents(components: CategorizedComponent[]): void {
+    if (!this.currentNodeLibrary) {
+      console.warn('[nodelib] Cannot register npm components: no current node library');
+      return;
+    }
+
+    console.debug('[nodelib] Registering npm components:', components.length);
+
+    let added = 0;
+    const existingNames = new Set(this.currentNodeLibrary.nodetypes.map(n => n.name));
+
+    components.forEach((categorized) => {
+      const component = categorized.component;
+      
+      // Generate unique node name
+      let nodeName = `npm.${component.packageName}.${component.name}`;
+      let displayName = component.name;
+
+      // Handle collision - check if component with same display name exists
+      const existingWithSameName = this.currentNodeLibrary.nodetypes.find(
+        n => n.displayName === displayName && !n.name.startsWith('npm.')
+      );
+
+      if (existingWithSameName) {
+        // Append package name to display name for disambiguation
+        displayName = `${component.name} (${categorized.subcategory})`;
+      }
+
+      // Skip if already exists (same package version)
+      if (existingNames.has(nodeName)) {
+        console.debug(`[nodelib] Skipping duplicate: ${nodeName}`);
+        return;
+      }
+
+      // Create node type entry
+      const nodeType: NodeLibraryDataNodeType = {
+        name: nodeName,
+        displayName: displayName,
+        category: categorized.category,
+        subCategory: categorized.subcategory,
+        color: 'component',
+        docs: `Imported from ${component.packageName}@${component.packageVersion}`,
+        dynamicports: [],
+        panel: {},
+        runtimeTypes: ['react'],
+        metadata: {
+          npmPackage: component.packageName,
+          npmVersion: component.packageVersion,
+          exportPath: component.exportPath,
+          exportType: component.exportType
+        }
+      };
+
+      // Add to nodetypes array
+      this.currentNodeLibrary.nodetypes.push(nodeType);
+      existingNames.add(nodeName);
+
+      // Add to module nodes index
+      if (!this.currentNodeLibrary.nodeIndex.moduleNodes) {
+        this.currentNodeLibrary.nodeIndex.moduleNodes = [];
+      }
+
+      this.currentNodeLibrary.nodeIndex.moduleNodes.push({
+        name: nodeName
+      });
+
+      added++;
+    });
+
+    console.debug(`[nodelib] Added ${added} npm components`);
+
+    // Update the node library to refresh UI
+    if (added > 0) {
+      this.updateIndex(true);
+    }
+  }
+
+  /**
+   * Remove all components from an npm package
+   * 
+   * @param packageName - Name of npm package to remove
+   */
+  public removeNpmPackage(packageName: string): void {
+    if (!this.currentNodeLibrary) {
+      return;
+    }
+
+    console.debug('[nodelib] Removing npm package:', packageName);
+
+    // Filter out nodes from this package
+    const prefix = `npm.${packageName}.`;
+    const originalCount = this.currentNodeLibrary.nodetypes.length;
+
+    this.currentNodeLibrary.nodetypes = this.currentNodeLibrary.nodetypes.filter(
+      node => !node.name.startsWith(prefix)
+    );
+
+    // Also remove from module nodes index
+    if (this.currentNodeLibrary.nodeIndex.moduleNodes) {
+      this.currentNodeLibrary.nodeIndex.moduleNodes = 
+        this.currentNodeLibrary.nodeIndex.moduleNodes.filter(
+          node => !node.name.startsWith(prefix)
+        );
+    }
+
+    const removed = originalCount - this.currentNodeLibrary.nodetypes.length;
+    console.debug(`[nodelib] Removed ${removed} components from ${packageName}`);
+
+    // Update UI if anything was removed
+    if (removed > 0) {
+      this.updateIndex(true);
+    }
   }
 }

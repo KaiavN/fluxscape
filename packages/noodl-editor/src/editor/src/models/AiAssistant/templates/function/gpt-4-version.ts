@@ -10,6 +10,7 @@ import {
   FUNCTION_CODE_QUESTION
 } from '@noodl-models/AiAssistant/templates/function';
 import { extractCodeBlockWithText, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
+import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
 import { guid } from '@noodl-utils/utils';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
@@ -146,7 +147,12 @@ A["FUNCTION"]`;
 
   const messages = currentScript
     ? [
-        // TODO: Enable this again later, ...history.slice(0, -1),
+        ...truncateHistoryForTokenLimit(
+          history.slice(0, -1),
+          'gpt-4',
+          FUNCTION_CODE_CONTEXT_EDIT.length,
+          currentScript.length
+        ),
         {
           role: 'system',
           content: FUNCTION_CODE_CONTEXT_EDIT.replace('%{code}%', currentScript)
@@ -257,7 +263,8 @@ A["FUNCTION"]`;
       max_tokens: 2048
     },
     onStream(tagName, text) {
-      // TODO: It calls an empty string at the end, why?
+      // OpenAI streaming API sends empty string as final chunk to signal end of stream
+      // Early return prevents unnecessary processing
       if (text.length === 0) {
         return;
       }

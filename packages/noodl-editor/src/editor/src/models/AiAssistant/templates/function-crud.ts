@@ -1,6 +1,7 @@
 import { ChatMessageType } from '@noodl-models/AiAssistant/ChatHistory';
 import { extractDatabaseSchema } from '@noodl-models/AiAssistant/DatabaseSchemaExtractor';
 import { AiNodeTemplate, IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
+import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export const template: AiNodeTemplate = {
@@ -49,9 +50,15 @@ export const template: AiNodeTemplate = {
     }));
 
     const currentScript = node.getParameter('functionScript');
+    const modelName = OpenAiStore.getModel();
     const messages = currentScript
       ? [
-          // TODO: Enable this again later, ...history.slice(0, -1),
+          ...truncateHistoryForTokenLimit(
+            history.slice(0, -1),
+            modelName,
+            FUNCTION_CRUD_CONTEXT_EDIT.replace('%{database-schema}%', dbCollectionsSource).replace('%{code}%', currentScript).length,
+            currentScript.length
+          ),
           {
             role: 'system',
             content: FUNCTION_CRUD_CONTEXT_EDIT.replace('%{database-schema}%', dbCollectionsSource).replace(
@@ -72,12 +79,13 @@ export const template: AiNodeTemplate = {
     const fullText = await chatStreamXml({
       messages,
       provider: {
-        model: OpenAiStore.getModel(),
+        model: modelName,
         temperature: 0.5,
         max_tokens: 2048
       },
       onStream(tagName, text) {
-        // TODO: It calls an empty string at the end, why?
+        // OpenAI streaming API sends empty string as final chunk to signal end of stream
+        // Early return prevents unnecessary processing
         if (text.length === 0) {
           return;
         }
