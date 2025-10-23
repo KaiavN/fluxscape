@@ -154,13 +154,12 @@ export function NpmImportPanel() {
           {/* Install button */}
           <Box>
             <PrimaryButton
-              variant={PrimaryButtonVariant.Primary}
+              label={isInstalling ? 'Installing...' : 'Install & Discover Components'}
+              variant={PrimaryButtonVariant.Cta}
               size={PrimaryButtonSize.Default}
               onClick={handleInstall}
               isDisabled={isInstalling || !command.trim()}
-            >
-              {isInstalling ? 'Installing...' : 'Install & Discover Components'}
-            </PrimaryButton>
+            />
           </Box>
 
           {/* Status display */}
