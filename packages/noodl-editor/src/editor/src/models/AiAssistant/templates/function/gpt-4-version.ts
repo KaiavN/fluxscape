@@ -256,7 +256,8 @@ A["FUNCTION"]`;
       max_tokens: 2048
     },
     onStream(tagName, text) {
-      // TODO: It calls an empty string at the end, why?
+      // OpenAI streaming API sends empty string as final chunk to signal end of stream
+      // Early return prevents unnecessary processing
       if (text.length === 0) {
         return;
       }
