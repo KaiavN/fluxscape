@@ -125,6 +125,7 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
   );
 
   private _contexts: Record<string, AiCopilotContext> = {};
+  private _contextLocks: Record<string, Promise<AiCopilotContext>> = {};
 
   public activities: AiActivityItem[] = [];
 
@@ -170,53 +171,67 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
       throw 'This node is not an AI node.';
     }
 
+    // Check if context already exists
     if (this._contexts[node.id]) {
       return this._contexts[node.id];
     }
 
-    const chatHistory = ChatHistory.fromJSON(node.metadata.prompt);
+    // Check if context creation is already in progress (prevent race condition)
+    if (this._contextLocks[node.id]) {
+      return this._contextLocks[node.id];
+    }
 
-    // Backwards compatibility, load the AI file and fetch the template.
-    if (node.metadata.AiAssistant && !node.metadata.prompt) {
+    // Create promise wrapper to prevent race conditions
+    const contextPromise = (async () => {
       try {
-        const path = await deprecated_getAiDirPath();
-        const filePath = filesystem.resolve(path, node.metadata.AiAssistant);
-        if (filesystem.exists(filePath)) {
-          const json = await filesystem.readJson(filePath);
-          const messages = json.history || [];
-          messages.forEach((message) => {
-            chatHistory.add(message);
-          });
-          chatHistory.metadata.templateId = json.metadata.templateId;
-          // NOTE: Keeping this since it is used in other places to define it as AI node
-          node.metadata.AiAssistant = 'moved';
-          node.metadata.prompt = chatHistory.toJSON();
-          node.notifyListeners('metadataChanged', { key: 'prompt', data: node.metadata.prompt });
-          await filesystem.removeFile(filePath);
+        const chatHistory = ChatHistory.fromJSON(node.metadata.prompt);
+
+        // Backwards compatibility, load the AI file and fetch the template.
+        if (node.metadata.AiAssistant && !node.metadata.prompt) {
+          try {
+            const path = await deprecated_getAiDirPath();
+            const filePath = filesystem.resolve(path, node.metadata.AiAssistant);
+            if (filesystem.exists(filePath)) {
+              const json = await filesystem.readJson(filePath);
+              const messages = json.history || [];
+              messages.forEach((message) => {
+                chatHistory.add(message);
+              });
+              chatHistory.metadata.templateId = json.metadata.templateId;
+              // NOTE: Keeping this since it is used in other places to define it as AI node
+              node.metadata.AiAssistant = 'moved';
+              node.metadata.prompt = chatHistory.toJSON();
+              node.notifyListeners('metadataChanged', { key: 'prompt', data: node.metadata.prompt });
+              await filesystem.removeFile(filePath);
+            }
+          } catch (error) {
+            console.error('Failed to load old AI file.', error);
+          }
         }
-      } catch (error) {
-        console.error('Failed to load old AI file.', error);
+
+        chatHistory.on(ChatHistoryEvent.ActivitiesChanged, () => {
+          this.notifyListeners(AiAssistantEvent.ProcessingUpdated, node.id);
+        });
+
+        const template = this.templates.find((x) => x.templateId === chatHistory.metadata.templateId);
+        if (!template) {
+          throw 'Template not found';
+        }
+
+        const context = new AiCopilotContext(template, chatHistory, node);
+        this._contexts[node.id] = context;
+
+        return context;
+      } finally {
+        // Clean up lock after context creation completes (success or error)
+        delete this._contextLocks[node.id];
       }
-    }
+    })();
 
-    // HACK: It is loading it twice...
-    if (this._contexts[node.id]) {
-      return this._contexts[node.id];
-    }
+    // Store the promise to prevent concurrent creation attempts
+    this._contextLocks[node.id] = contextPromise;
 
-    chatHistory.on(ChatHistoryEvent.ActivitiesChanged, () => {
-      this.notifyListeners(AiAssistantEvent.ProcessingUpdated, node.id);
-    });
-
-    const template = this.templates.find((x) => x.templateId === chatHistory.metadata.templateId);
-    if (!template) {
-      throw 'Template not found';
-    }
-
-    const context = new AiCopilotContext(template, chatHistory, node);
-    this._contexts[node.id] = context;
-
-    return context;
+    return contextPromise;
   }
 
   public async send(context: AiCopilotContext) {
