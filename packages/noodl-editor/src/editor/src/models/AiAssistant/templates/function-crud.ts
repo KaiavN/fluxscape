@@ -1,6 +1,7 @@
 import { ChatMessageType } from '@noodl-models/AiAssistant/ChatHistory';
 import { extractDatabaseSchema } from '@noodl-models/AiAssistant/DatabaseSchemaExtractor';
 import { AiNodeTemplate, IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
+import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
 
 export const template: AiNodeTemplate = {
   type: 'green',
@@ -50,7 +51,12 @@ export const template: AiNodeTemplate = {
     const currentScript = node.getParameter('functionScript');
     const messages = currentScript
       ? [
-          // TODO: Enable this again later, ...history.slice(0, -1),
+          ...truncateHistoryForTokenLimit(
+            history.slice(0, -1),
+            'gpt-4',
+            FUNCTION_CRUD_CONTEXT_EDIT.replace('%{database-schema}%', dbCollectionsSource).replace('%{code}%', currentScript).length,
+            currentScript.length
+          ),
           {
             role: 'system',
             content: FUNCTION_CRUD_CONTEXT_EDIT.replace('%{database-schema}%', dbCollectionsSource).replace(
