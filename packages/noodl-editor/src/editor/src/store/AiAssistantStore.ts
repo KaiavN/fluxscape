@@ -18,24 +18,29 @@ const AI_ASSISTANT_VERIFIED_KEY = 'aiAssistant.verified';
 const AI_ASSISTANT_ENDPOINT_KEY = 'aiAssistant.endpoint';
 const AI_ASSISTANT_MODEL_KEY = 'aiAssistant.model';
 
-export type AiVersion = 'disabled' | 'full-beta' | 'enterprise';
+export type AiVersion = 'disabled' | 'openrouter';
 
-export type AiModel = 'gpt-3' | 'gpt-4';
+export type AiModel = string;
 
 export const OpenAiStore = {
   isEnabled(): boolean {
     const version = EditorSettings.instance.get(AI_ASSISTANT_VERSION_KEY);
-    return version === 'full-beta';
+    return version === 'openrouter';
   },
   getVersion(): AiVersion {
-    return EditorSettings.instance.get(AI_ASSISTANT_VERSION_KEY) || 'full-beta';
+    const stored = EditorSettings.instance.get(AI_ASSISTANT_VERSION_KEY);
+    // Migrate old versions to openrouter
+    if (stored === 'full-beta' || stored === 'enterprise') {
+      return 'openrouter';
+    }
+    return stored || 'openrouter';
   },
   getPrettyVersion(): string {
     switch (this.getVersion()) {
-      case 'full-beta':
-        return 'Full Beta';
-      case 'enterprise':
-        return 'Enterprise';
+      case 'openrouter':
+        return 'OpenRouter';
+      case 'disabled':
+        return 'Disabled';
     }
     return null;
   },
@@ -49,22 +54,16 @@ export const OpenAiStore = {
   async setApiKey(value: string) {
     EditorSettings.instance.set(AI_ASSISTANT_API_KEY, value);
   },
-  setIsAiApiKeyVerified(value: boolean) {
-    EditorSettings.instance.set(AI_ASSISTANT_VERIFIED_KEY, value);
-  },
-  getIsAiApiKeyVerified() {
-    return !!EditorSettings.instance.get(AI_ASSISTANT_VERIFIED_KEY);
-  },
-  setEndpoint(value: string) {
-    EditorSettings.instance.set(AI_ASSISTANT_ENDPOINT_KEY, value);
-  },
-  getEndpoint() {
-    return EditorSettings.instance.get(AI_ASSISTANT_ENDPOINT_KEY);
-  },
-  setModel(value: AiModel) {
+  setModel(value: string) {
     EditorSettings.instance.set(AI_ASSISTANT_MODEL_KEY, value);
   },
   getModel(): AiModel {
-    return EditorSettings.instance.get(AI_ASSISTANT_MODEL_KEY) || 'gpt-3';
+    const stored = EditorSettings.instance.get(AI_ASSISTANT_MODEL_KEY);
+    
+    // Migrate old format to OpenRouter format
+    if (stored === 'gpt-3') return 'openai/gpt-3.5-turbo';
+    if (stored === 'gpt-4') return 'openai/gpt-4';
+    
+    return stored || 'openai/gpt-4';
   }
 };

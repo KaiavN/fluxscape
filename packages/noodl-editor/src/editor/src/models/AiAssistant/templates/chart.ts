@@ -3,6 +3,7 @@ import { AiUtils } from '@noodl-models/AiAssistant/context/ai-utils';
 import { AiNodeTemplate } from '@noodl-models/AiAssistant/interfaces';
 import { extractCodeBlock, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
 import { ConnectionInspector } from '@noodl-utils/connectionInspector';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export const template: AiNodeTemplate = {
   type: 'blue',
@@ -49,7 +50,7 @@ export const template: AiNodeTemplate = {
 
     const fullCodeText = await chatStream({
       provider: {
-        model: 'gpt-4',
+        model: OpenAiStore.getModel(),
         temperature: 0.0,
         max_tokens: 2048
       },
@@ -119,7 +120,7 @@ export const template: AiNodeTemplate = {
         { role: 'user', content: codeText }
       ],
       provider: {
-        model: 'gpt-3.5-turbo',
+        model: OpenAiStore.getModel(),
         temperature: 0.0,
         max_tokens: 2048
       },

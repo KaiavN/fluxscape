@@ -13,14 +13,10 @@ export type AiCopilotTextProviders = {
   max_tokens?: number;
 }
 
-export type ModelName = 'gpt-3.5-turbo' | 'gpt-4';
+export type ModelName = string;
 
 export type AiCopilotChatProviders = {
-  model: 'gpt-3.5-turbo',
-  temperature?: number;
-  max_tokens?: number;
-} | {
-  model: 'gpt-4',
+  model: string;
   temperature?: number;
   max_tokens?: number;
 }

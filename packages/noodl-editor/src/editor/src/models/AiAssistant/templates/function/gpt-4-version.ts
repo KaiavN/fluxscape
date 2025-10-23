@@ -11,6 +11,7 @@ import {
 } from '@noodl-models/AiAssistant/templates/function';
 import { extractCodeBlockWithText, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
 import { guid } from '@noodl-utils/utils';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export async function execute({ node, chatHistory, chatStream, chatStreamXml }: IAiCopilotContext) {
   const activityCodeGenId = 'code-generation';
@@ -56,7 +57,7 @@ A["FUNCTION"]`;
     provider: {
       // NOTE: Tried with GPT 3.5 here before.
       //       Then this question doesnt work: "Can you make a function that starts recording from the microphone when it gets a start signal and stops recording when it gets a stop signal"
-      model: 'gpt-4',
+      model: OpenAiStore.getModel(),
       temperature: 0.0
     }
   });
@@ -100,7 +101,7 @@ A["FUNCTION"]`;
 
     const fullText = await chatStream({
       provider: {
-        model: 'gpt-4',
+        model: OpenAiStore.getModel(),
         temperature: 0.0,
         max_tokens: 2048
       },
@@ -156,7 +157,7 @@ A["FUNCTION"]`;
 
   const fullCodeText = await chatStream({
     provider: {
-      model: 'gpt-4',
+      model: OpenAiStore.getModel(),
       temperature: 0.0,
       max_tokens: 2048
     },
@@ -251,7 +252,7 @@ A["FUNCTION"]`;
       }
     ],
     provider: {
-      model: 'gpt-4',
+      model: OpenAiStore.getModel(),
       temperature: 0.0,
       max_tokens: 2048
     },
