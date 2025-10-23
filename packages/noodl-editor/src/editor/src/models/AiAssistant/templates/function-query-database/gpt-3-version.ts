@@ -2,6 +2,7 @@ import { ChatMessageType, ChatSuggestion } from '@noodl-models/AiAssistant/ChatH
 import { AiUtils } from '@noodl-models/AiAssistant/context/ai-utils';
 import { IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
 import { extractCodeBlock, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
+import { truncateHistoryForTokenLimit } from '@noodl-models/AiAssistant/utils/historyTruncation';
 import { guid } from '@noodl-utils/utils';
 
 export async function generate(
@@ -19,7 +20,12 @@ export async function generate(
   // Generate code
   const messages = currentScript
     ? [
-        // TODO: Enable this again later, ...history.slice(0, -1),
+        ...truncateHistoryForTokenLimit(
+          history.slice(0, -1),
+          'gpt-3.5-turbo',
+          FUNCTION_QUERY_DATABASE_CONTEXT_EDIT_GPT3.replace('%{code}%', currentScript).replace('%{database-schema}%', dbCollectionsSource).length,
+          currentScript.length
+        ),
         {
           role: 'system',
           content: FUNCTION_QUERY_DATABASE_CONTEXT_EDIT_GPT3.replace('%{code}%', currentScript).replace(
