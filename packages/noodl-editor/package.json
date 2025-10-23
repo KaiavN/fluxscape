@@ -111,6 +111,7 @@
     "@types/string.prototype.matchall": "^4.0.1",
     "@types/underscore": "^1.11.4",
     "@types/webpack-env": "^1.18.0",
+    "@electron/notarize": "^2.1.0",
     "babel-loader": "^8.2.4",
     "concurrently": "^7.4.0",
     "css-loader": "^6.7.1",
