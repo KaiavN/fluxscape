@@ -5,15 +5,17 @@
 
 import React, { useState } from 'react';
 
-import { Button, ButtonSize, ButtonVariant } from '@noodl-core-ui/components/inputs/Button';
+import { PrimaryButton, PrimaryButtonSize, PrimaryButtonVariant } from '@noodl-core-ui/components/inputs/PrimaryButton';
 import { TextArea } from '@noodl-core-ui/components/inputs/TextArea';
 import { Box } from '@noodl-core-ui/components/layout/Box';
 import { VStack } from '@noodl-core-ui/components/layout/Stack';
 import { BasePanel } from '@noodl-core-ui/components/sidebar/BasePanel';
 import { Text, TextSize, TextType } from '@noodl-core-ui/components/typography/Text';
+import { FeedbackType } from '@noodl-constants/FeedbackType';
 
 import { NpmPackageImporter, ImportStatus } from '../../../models/NpmPackageImporter';
-import { ToastLayer, ToastType } from '../../ToastLayer/ToastLayer';
+import { ToastLayer } from '../../ToastLayer/ToastLayer';
+import { ToastType } from '../../ToastLayer/components/ToastCard/ToastCard';
 
 type InstallationStatus = 'idle' | 'validating' | 'installing' | 'discovering' | 'categorizing' | 'complete' | 'error';
 
@@ -154,14 +156,14 @@ export function NpmImportPanel() {
 
           {/* Install button */}
           <Box>
-            <Button
-              variant={ButtonVariant.Primary}
-              size={ButtonSize.Default}
+            <PrimaryButton
+              variant={PrimaryButtonVariant.Primary}
+              size={PrimaryButtonSize.Default}
               onClick={handleInstall}
               isDisabled={isInstalling || !command.trim()}
             >
               {isInstalling ? 'Installing...' : 'Install & Discover Components'}
-            </Button>
+            </PrimaryButton>
           </Box>
 
           {/* Status display */}
