@@ -175,7 +175,7 @@ export function NpmImportPanel() {
                   </Text>
                 )}
                 {/* Progress bar */}
-                <Box style={{
+                <Box UNSAFE_style={{
                   width: '100%',
                   height: '4px',
                   backgroundColor: 'var(--color-background-tertiary)',
@@ -210,7 +210,7 @@ export function NpmImportPanel() {
                   Installed Packages
                 </Text>
                 {installedPackages.map((pkg, index) => (
-                  <Box key={index} style={{
+                  <Box key={index} UNSAFE_style={{
                     padding: '8px',
                     backgroundColor: 'var(--color-background-secondary)',
                     borderRadius: '4px'
