@@ -74,7 +74,7 @@ import { getCurrentPlatform } from '../helper';
   console.log("--- Run 'npm install' ...");
 
   if (platform === 'darwin') {
-    execSync(`npm install electron-notarize`, {
+    execSync(`npm install @electron/notarize`, {
       stdio: 'inherit',
       env: process.env
     });
