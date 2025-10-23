@@ -4,6 +4,7 @@ import { IAiCopilotContext } from '@noodl-models/AiAssistant/interfaces';
 import { extractCodeBlock, wrapInput, wrapOutput } from '@noodl-models/AiAssistant/templates/helper';
 import { EditorSettings } from '@noodl-utils/editorsettings';
 import { guid } from '@noodl-utils/utils';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 import { AI_ASSISTANT_ENABLED_SUGGESTIONS_KEY } from '../../../../views/panels/EditorSettingsPanel/sections/OpenAiSection';
 
@@ -41,7 +42,7 @@ export async function execute(
 
   const fullCodeText = await chatStream({
     provider: {
-      model: 'gpt-4',
+      model: OpenAiStore.getModel(),
       temperature: 0.0,
       max_tokens: 2048
     },
@@ -112,7 +113,7 @@ export async function execute(
       { role: 'user', content: codeText }
     ],
     provider: {
-      model: 'gpt-4',
+      model: OpenAiStore.getModel(),
       temperature: 0.0,
       max_tokens: 2048
     },

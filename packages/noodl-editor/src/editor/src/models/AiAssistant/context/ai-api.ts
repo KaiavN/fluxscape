@@ -5,7 +5,7 @@ import { AiCopilotChatProviders, AiCopilotChatStreamArgs } from '@noodl-models/A
 
 function toChatProvider(provider: AiCopilotChatProviders | undefined) {
   return {
-    model: provider?.model || 'gpt-3.5-turbo',
+    model: provider?.model || 'openai/gpt-4',
     temperature: provider?.temperature,
     max_tokens: provider?.max_tokens
   };
@@ -14,11 +14,7 @@ function toChatProvider(provider: AiCopilotChatProviders | undefined) {
 async function directChatOpenAi({ messages, provider, abortController, onEnd, onStream }: AiCopilotChatStreamArgs) {
   const OPENAI_API_KEY = OpenAiStore.getApiKey();
   const controller = abortController || new AbortController();
-  let endpoint = `https://api.openai.com/v1/chat/completions`;
-
-  if (OpenAiStore.getVersion() === 'enterprise') {
-    endpoint = OpenAiStore.getEndpoint();
-  }
+  let endpoint = `https://openrouter.ai/api/v1/chat/completions`;
 
   let fullText = '';
   let completionTokenCount = 0;
@@ -75,7 +71,7 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
         throw err; // rethrow to stop the operation
       } else if (['RetriableError'].includes(errText)) {
         if (tries <= 0) {
-          throw `Apologies, OpenAI is currently facing heavy traffic, causing delays in processing requests. Please be patient and try again later.`;
+          throw `Apologies, the AI service is currently facing heavy traffic, causing delays in processing requests. Please be patient and try again later.`;
         }
         tries--;
       } else {
@@ -96,7 +92,7 @@ export namespace Ai {
     let fullText = '';
 
     const version = OpenAiStore.getVersion();
-    if (['full-beta', 'enterprise'].includes(version)) {
+    if (version === 'openrouter') {
       const result = await directChatOpenAi(args);
       fullText = result.fullText;
     } else {

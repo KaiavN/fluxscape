@@ -1,4 +1,5 @@
 import { NodeGraphContextTmp } from '@noodl-contexts/NodeGraphContext/NodeGraphContext';
+import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 import { makeChatRequest } from './utils';
 
@@ -44,7 +45,7 @@ export async function handleSuggestionCommand(prompt: string, statusCallback: (s
     { role: 'user', content: p }
   ];
 
-  const response = await makeChatRequest('gpt-4', messages);
+  const response = await makeChatRequest(OpenAiStore.getModel(), messages);
   console.log(response);
 
   return JSON.parse(response.content);

@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { FeedbackType } from '@noodl-constants/FeedbackType';
 import { AiAssistantModel } from '@noodl-models/AiAssistant';
-import { verifyOpenAiApiKey } from '@noodl-models/AiAssistant/api';
 import { SidebarModel } from '@noodl-models/sidebar';
 import getDocsEndpoint from '@noodl-utils/getDocsEndpoint';
 import { LocalUserIdentity } from '@noodl-utils/LocalUserIdentity';
@@ -47,7 +46,6 @@ export default function Clippy() {
   const [shouldFirstInputAutofocus, setShouldFirstInputAutofocus] = useState(false);
   const [isTextareaInsteadOfInput, setIsTextareaInsteadOfInput] = useState(false);
   const [commandResultItems, setCommandResultItems] = useState<CommandResultItem[]>(null); //commands might generate follow-up items
-  const [hasGPT4, setHasGPT4] = useState(false);
   const firstInputRef = useRef(null);
   const secondInputRef = useRef(null);
   const secondTextAreaRef = useRef(null);
@@ -60,16 +58,11 @@ export default function Clippy() {
 
   const isFrontend = nodeGraphContext.active === 'frontend';
   const commandFilter = (x) =>
-    ((x.availableOnFrontend && isFrontend) || (x.availableOnBackend && !isFrontend)) &&
-    (!x.requireGPT4 || (x.requireGPT4 && hasGPT4));
+    ((x.availableOnFrontend && isFrontend) || (x.availableOnBackend && !isFrontend));
 
   const promptToNode = promptToNodeCommands.filter(commandFilter);
   const copilotNodes = copilotNodeCommands.filter(commandFilter);
   const comingSoonItems = comingSoonCommands.filter(commandFilter);
-  const disabledDueToGpt3Items = promptToNodeCommands
-    .concat(copilotNodeCommands)
-    .concat(comingSoonCommands)
-    .filter((x) => x.requireGPT4 && !hasGPT4);
 
   const ALL_OPTIONS = [...promptToNode, ...copilotNodes];
 
@@ -77,32 +70,12 @@ export default function Clippy() {
 
   useEffect(() => {
     const version = OpenAiStore.getVersion();
-    if (version === 'enterprise') {
+    if (version === 'openrouter') {
       setHasApiKey(true);
-      setHasGPT4(OpenAiStore.getModel() === 'gpt-4');
-    } else if (version === 'full-beta') {
-      setHasApiKey(OpenAiStore.getIsAiApiKeyVerified());
     } else {
-      setHasGPT4(false);
       setHasApiKey(false);
     }
   }, [isInputOpen]);
-
-  useEffect(() => {
-    if (!hasApiKey) return;
-
-    async function doIt() {
-      const version = OpenAiStore.getVersion();
-      if (version === 'enterprise') {
-        setHasGPT4(OpenAiStore.getModel() === 'gpt-4');
-      } else {
-        const models = await verifyOpenAiApiKey(OpenAiStore.getApiKey());
-        setHasGPT4(!!models['gpt-4']);
-      }
-    }
-
-    doIt();
-  }, [hasApiKey]);
 
   //check for clicks outside clippy, which should close it if it's open and not thinking
   useEffect(() => {
@@ -213,27 +186,19 @@ export default function Clippy() {
 
   const initialPlaceholder = isInputOpen ? 'Select (or type) a command below' : 'Ask FluxScape AI';
   const isPromptInWrongOrder = Boolean(!selectedOption) && Boolean(secondInputValue);
-  const isFullBeta = ['full-beta', 'enterprise'].includes(version);
+  const isOpenRouter = version === 'openrouter';
   const isLimitedBeta = false; // TODO: version === 'limited-beta';
 
   let isCommandsEnabled = isLimitedBeta;
-  if (version === 'enterprise') {
-    isCommandsEnabled = true;
-  } else if (isFullBeta) {
-    if (!hasGPT4 || !hasApiKey) {
-      isCommandsEnabled = false;
-    } else {
-      isCommandsEnabled = true;
-    }
+  if (version === 'openrouter') {
+    isCommandsEnabled = hasApiKey;
   }
 
   let versionLabel = '';
-  if (version === 'enterprise') {
-    versionLabel = `Enterprise (${OpenAiStore.getModel()})`;
+  if (version === 'openrouter') {
+    versionLabel = `OpenRouter (${OpenAiStore.getModel()})`;
   } else if (isLimitedBeta) {
     versionLabel = 'Limited Beta (gpt-3)';
-  } else if (isFullBeta && hasApiKey && hasGPT4) {
-    versionLabel = 'Full beta (gpt-4)';
   }
 
   return (
@@ -397,24 +362,18 @@ export default function Clippy() {
         <div className={css.UglySpacingHackPleaseLookAway} />
 
         <div className={classNames(css.ClippyPopup, isInputOpen && !isAiThinking && css.__isVisible)}>
-          {isFullBeta && !isCommandsEnabled && (
+          {isOpenRouter && !isCommandsEnabled && (
             <div className={css.ClippyNoApiKey}>
-              <Title hasBottomSpacing>Add your OpenAI API key</Title>
-              <Text hasBottomSpacing>You need a GPT-4 API key to access the full beta features.</Text>
+              <Title hasBottomSpacing>Add your OpenRouter API key</Title>
+              <Text hasBottomSpacing>You need an OpenRouter API key to access AI features.</Text>
               <Text>
-                1. Get your API key from your{' '}
-                <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noreferrer">
-                  OpenAI account
+                1. Get your API key from{' '}
+                <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">
+                  OpenRouter
                 </a>
               </Text>
-              <Text>2. Make sure GPT-4 is enabled for your account</Text>
-              <Text>3. Paste the key into the AI section in the Editor Settings panel</Text>
-              <Text hasBottomSpacing>4. Click the "Verify API Key" button</Text>
+              <Text hasBottomSpacing>2. Paste the key into the AI section in the Editor Settings panel</Text>
 
-              <Text hasBottomSpacing>
-                If you dont have an API key with GPT-4 access, you can set the FluxScape AI to use the Limited Beta in
-                the editor settings.
-              </Text>
               <PrimaryButton
                 size={PrimaryButtonSize.Small}
                 variant={PrimaryButtonVariant.MutedOnLowBg}
@@ -590,7 +549,7 @@ export default function Clippy() {
             </>
           )}
 
-          {!isFullBeta && (
+          {!isOpenRouter && (
             <div className={css.LimitedBetaCard}>
               <Label size={LabelSize.Medium} variant={TextType.Proud} hasBottomSpacing>
                 Limited beta
@@ -598,7 +557,7 @@ export default function Clippy() {
 
               <Text hasBottomSpacing size={TextSize.Medium}>
                 You are running the limited beta of FluxScape AI. If features fewer commands and a less capable AI. Get
-                full beta access by bringing your own GPT-4 API key.
+                full access by using OpenRouter with your own API key.
               </Text>
 
               <PrimaryButton
