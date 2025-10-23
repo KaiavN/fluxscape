@@ -83,9 +83,8 @@ export function NpmImportPanel() {
 
       if (result.success) {
         // Show success toast
-        ToastLayer.showToast(
+        ToastLayer.showSuccess(
           `Successfully imported ${result.componentCount} component(s) from ${result.packages?.join(', ')}`,
-          ToastType.Success
         );
 
         // Update installed packages list
@@ -103,9 +102,8 @@ export function NpmImportPanel() {
       } else {
         // Show error
         setErrorMessage(result.error || 'Installation failed');
-        ToastLayer.showToast(
+        ToastLayer.showError(
           `Failed to install package: ${result.error}`,
-          ToastType.Error
         );
       }
 
@@ -113,7 +111,7 @@ export function NpmImportPanel() {
       const message = error instanceof Error ? error.message : 'Unknown error occurred';
       setErrorMessage(message);
       setStatus('error');
-      ToastLayer.showToast(`Installation error: ${message}`, ToastType.Error);
+      ToastLayer.showError(`Installation error: ${message}`);
     }
   };
 
