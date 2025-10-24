@@ -1,5 +1,6 @@
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
+import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 import { AiCopilotChatProviders, AiCopilotChatStreamArgs } from '@noodl-models/AiAssistant/interfaces';
 
@@ -59,7 +60,8 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
           onStream && onStream(fullText, delta);
         }
       } catch (error) {
-        console.error(error);
+        console.error('Parsing error in AI stream:', error);
+        ToastLayer.showError('Received invalid response from AI service. Please try again.');
       }
     },
     onclose() {
@@ -67,14 +69,24 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
     },
     onerror(err) {
       const errText = err.toString();
+      console.error('AI API error:', err);
+      
       if (['FatalError'].includes(errText)) {
+        // 4xx errors (except 429) - don't retry
+        ToastLayer.showError('AI request failed. Please check your API key and try again.');
         throw err; // rethrow to stop the operation
       } else if (['RetriableError'].includes(errText)) {
         if (tries <= 0) {
+          // All retries exhausted
+          ToastLayer.showError('AI service is experiencing high traffic. Please try again in a few moments.');
           throw `Apologies, the AI service is currently facing heavy traffic, causing delays in processing requests. Please be patient and try again later.`;
         }
         tries--;
       } else {
+        // Unknown errors - retry
+        if (tries <= 0) {
+          ToastLayer.showError('Network connection failed. Please check your internet connection.');
+        }
         // do nothing to automatically retry. You can also
         // return a specific retry interval here.
       }
