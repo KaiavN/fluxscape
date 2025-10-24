@@ -1,15 +1,39 @@
 import SchemaHandler from '@noodl-utils/schemahandler';
 import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
+/**
+ * Retry database fetch with exponential backoff
+ */
+async function retryDatabaseFetch(maxRetries: number = 2): Promise<boolean> {
+  const schema = SchemaHandler.instance;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await schema._fetch();
+      return true; // Success
+    } catch (error) {
+      console.error(`Database schema fetch attempt ${attempt + 1}/${maxRetries + 1} failed:`, error);
+      
+      if (attempt < maxRetries) {
+        const delay = 1000 * Math.pow(2, attempt);
+        console.log(`Retrying database fetch in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  return false; // All attempts failed
+}
+
 export async function extractDatabaseSchema() {
   const schema = SchemaHandler.instance;
   if (typeof schema.haveCloudServices === 'undefined') {
     console.error('Missing database schema');
 
-    try {
-      await schema._fetch();
-    } catch (error) {
-      console.error('Failed to fetch database schema:', error);
+    const fetchSuccess = await retryDatabaseFetch(2);
+    
+    if (!fetchSuccess) {
+      console.error('Failed to fetch database schema after retries');
       ToastLayer.showError(
         'Failed to load database schema. AI features requiring database access may not work correctly. Please check your database connection.'
       );
@@ -59,10 +83,10 @@ export async function extractDatabaseSchemaJSON(): Promise<{ name: string; schem
   if (typeof schema.haveCloudServices === 'undefined') {
     console.error('Missing database schema');
 
-    try {
-      await schema._fetch();
-    } catch (error) {
-      console.error('Failed to fetch database schema JSON:', error);
+    const fetchSuccess = await retryDatabaseFetch(2);
+    
+    if (!fetchSuccess) {
+      console.error('Failed to fetch database schema JSON after retries');
       ToastLayer.showError(
         'Failed to load database schema. AI features requiring database access may not work correctly. Please check your database connection.'
       );
