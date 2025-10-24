@@ -6,6 +6,7 @@ import { copilotNodeCommands, copilotNodeInstaPromptable } from './ClippyCommand
 import { handleImageCommand } from './Commands/ImageCommand';
 import { handleSuggestionCommand } from './Commands/SuggestCommand';
 import { handleUICommand } from './Commands/UICommand';
+import { handleFormatCommand } from './Commands/FormatCommand';
 
 export type CommandResultItem = {
   name: string;
@@ -28,6 +29,12 @@ export async function handleCommand(
     return await handleUICommand(prompt, statusCallback, {
       allowImageGeneration: true,
       allowImageNode: true
+    });
+  }
+
+  if (command === '/format') {
+    return await handleFormatCommand(prompt, statusCallback, {
+      nodeGraph: options.nodeGraph
     });
   }
 
