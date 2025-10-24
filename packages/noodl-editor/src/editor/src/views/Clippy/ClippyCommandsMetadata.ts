@@ -60,7 +60,6 @@ export const promptToNodeCommands: CommandMetadata[] = [
     ]
   },
   {
-<<<<<<< HEAD
     title: '/Format',
     tag: 'Format Prompt',
     description: 'Improve formatting and styling of existing nodes',
@@ -76,7 +75,8 @@ export const promptToNodeCommands: CommandMetadata[] = [
       'Increase spacing between buttons',
       'Make layout more professional'
     ]
-=======
+  },
+  {
     title: '/Suggest',
     requireGPT4: true,
     tag: 'Suggest Prompt',
@@ -87,7 +87,6 @@ export const promptToNodeCommands: CommandMetadata[] = [
     availableOnFrontend: true,
     availableOnBackend: false,
     examples: ['What feature should I add next?', 'How can the form be improved?']
->>>>>>> origin/main
   }
 ];
 
