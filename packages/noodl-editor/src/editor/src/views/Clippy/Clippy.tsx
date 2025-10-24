@@ -178,8 +178,9 @@ export default function Clippy() {
         setCommandResultItems(res);
       }
     } catch (e) {
-      console.log(e);
-      ToastLayer.showError(e.toString());
+      console.error('AI command failed:', e);
+      const errorMessage = e instanceof Error ? e.message : e.toString();
+      ToastLayer.showError(`AI command failed: ${errorMessage}`);
     }
 
     aiAssistantModel.removeActivity(id);
