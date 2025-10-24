@@ -58,10 +58,22 @@ export const promptToNodeCommands: CommandMetadata[] = [
       'Four kittens with cool sunshades',
       'The worlds fastest car on holiday'
     ]
+  },
+  {
+    title: '/Suggest',
+    requireGPT4: true,
+    tag: 'Suggest Prompt',
+    description: 'Get suggestions for improvements',
+    placeholder: 'What to get suggestions for',
+    type: PopupItemType.Custom,
+    icon: IconName.Question,
+    availableOnFrontend: true,
+    availableOnBackend: false,
+    examples: ['What feature should I add next?', 'How can the form be improved?']
   }
 ];
 
-export const copilotNodeInstaPromptable = ['/function', '/read from database', '/write to database'];
+export const copilotNodeInstaPromptable = ['/function', '/read from database', '/write to database', '/chart', '/refactor', '/transform', '/validate', '/api'];
 export const copilotNodeCommands: CopilotCommandMetadata[] = [
   {
     requireGPT4: false,
@@ -122,33 +134,92 @@ export const copilotNodeCommands: CopilotCommandMetadata[] = [
     availableOnFrontend: true,
     availableOnBackend: true,
     examples: ['Get an array of numbers, calculate the average, and save that to the current users score attribute']
+  },
+  {
+    requireGPT4: true,
+    templateId: 'chart',
+    title: '/Chart',
+    tag: 'Chart',
+    description: 'Generate a Chart.js chart from data',
+    placeholder: 'What should the chart show?',
+    type: PopupItemType.Visual,
+    icon: IconName.Chart,
+    availableOnFrontend: true,
+    availableOnBackend: false,
+    examples: ['Show a bar chart of sales by month', 'Create a pie chart of user types']
+  },
+  {
+    requireGPT4: true,
+    templateId: 'function-refactor',
+    title: '/Refactor',
+    tag: 'Refactor',
+    description: 'Improve and refactor existing function code',
+    placeholder: 'How should it be improved?',
+    type: PopupItemType.Custom,
+    icon: IconName.Code,
+    availableOnFrontend: true,
+    availableOnBackend: true,
+    examples: [
+      'Make this more performant',
+      'Add error handling',
+      'Make this code more readable',
+      'Simplify this logic'
+    ]
+  },
+  {
+    requireGPT4: false,
+    templateId: 'function-transform',
+    title: '/Transform',
+    tag: 'Transform',
+    description: 'Transform data from one format to another',
+    placeholder: 'What transformation?',
+    type: PopupItemType.Data,
+    icon: IconName.Code,
+    availableOnFrontend: true,
+    availableOnBackend: true,
+    examples: [
+      'Convert array to object keyed by ID',
+      'Flatten nested data',
+      'Extract specific fields from objects',
+      'Filter and map user data'
+    ]
+  },
+  {
+    requireGPT4: false,
+    templateId: 'function-validate',
+    title: '/Validate',
+    tag: 'Validate',
+    description: 'Create validation logic for forms and data',
+    placeholder: 'What should be validated?',
+    type: PopupItemType.Custom,
+    icon: IconName.Code,
+    availableOnFrontend: true,
+    availableOnBackend: true,
+    examples: [
+      'Validate email format',
+      'Check password is at least 8 characters',
+      'Ensure phone number is valid',
+      'Validate required fields are filled'
+    ]
+  },
+  {
+    requireGPT4: true,
+    templateId: 'function-api',
+    title: '/API',
+    tag: 'API',
+    description: 'Configure REST API call with proper formatting',
+    placeholder: 'Which API to call?',
+    type: PopupItemType.Data,
+    icon: IconName.RestApi,
+    availableOnFrontend: true,
+    availableOnBackend: true,
+    examples: [
+      'Get weather from OpenWeather API for lat/lon inputs',
+      'POST message to Slack webhook',
+      'Fetch user data from custom API',
+      'Call Stripe API to create payment'
+    ]
   }
 ];
 
-export const comingSoonCommands: CommandMetadata[] = [
-  {
-    requireGPT4: true,
-    // templateId: 'chart',
-    title: '/Chart',
-    tag: 'Chart Prompt',
-    description: 'Generate a chart that can display data',
-    placeholder: '',
-    type: PopupItemType.Visual,
-    icon: IconName.Question,
-    availableOnFrontend: true,
-    availableOnBackend: false,
-    examples: []
-  },
-  {
-    title: '/Suggest',
-    requireGPT4: true,
-    tag: 'Suggest Prompt',
-    description: 'Get suggestions',
-    placeholder: 'What to get suggestions for',
-    type: PopupItemType.Visual,
-    icon: IconName.Question,
-    availableOnFrontend: true,
-    availableOnBackend: false,
-    examples: ['What feature should I add next?', 'How can the form be improved?']
-  }
-];
+export const comingSoonCommands: CommandMetadata[] = [];

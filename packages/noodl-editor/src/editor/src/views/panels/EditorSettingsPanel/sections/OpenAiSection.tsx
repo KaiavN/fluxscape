@@ -19,6 +19,7 @@ export function OpenAiSection() {
   const [enabledState, setEnabledState] = useState<AiVersion>(OpenAiStore.getVersion());
   const [apiKey, setApiKey] = useState(OpenAiStore.getApiKey());
   const [model, setModel] = useState<AiModel>(OpenAiStore.getModel());
+  const [imageModel, setImageModel] = useState<string>(OpenAiStore.getImageModel());
 
   return (
     <CollapsableSection title="FluxScape AI (Beta)">
@@ -59,6 +60,26 @@ export function OpenAiSection() {
               </PropertyPanelRow>
               <Box hasYSpacing>
                 <Text>Enter any OpenRouter model ID (see openrouter.ai/models)</Text>
+              </Box>
+              <PropertyPanelRow label="Image Model" isChanged={false}>
+                <PropertyPanelSelectInput
+                  value={imageModel}
+                  properties={{
+                    options: [
+                      { label: 'Flux Schnell Free (Fast, free)', value: 'black-forest-labs/flux-schnell-free' },
+                      { label: 'Flux Pro (Best quality)', value: 'black-forest-labs/flux-pro' },
+                      { label: 'DALL-E 3', value: 'openai/dall-e-3' },
+                      { label: 'DALL-E 2', value: 'openai/dall-e-2' }
+                    ]
+                  }}
+                  onChange={(value: string) => {
+                    setImageModel(value);
+                    OpenAiStore.setImageModel(value);
+                  }}
+                />
+              </PropertyPanelRow>
+              <Box hasYSpacing>
+                <Text>Select the model to use for image generation</Text>
               </Box>
               <PropertyPanelRow label="API Key" isChanged={false}>
                 <PropertyPanelPasswordInput

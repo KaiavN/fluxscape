@@ -40,14 +40,26 @@ export async function execute(
         ...history
       ];
 
-  const fullCodeText = await chatStream({
-    provider: {
-      model: OpenAiStore.getModel(),
-      temperature: 0.0,
-      max_tokens: 2048
-    },
-    messages
-  });
+  let fullCodeText;
+  try {
+    fullCodeText = await chatStream({
+      provider: {
+        model: OpenAiStore.getModel(),
+        temperature: 0.0,
+        max_tokens: 2048
+      },
+      messages
+    });
+  } catch (error) {
+    console.error('Query code generation failed:', error);
+    const activityCodeGenId = 'code-generation';
+    chatHistory.removeActivity(activityCodeGenId);
+    chatHistory.add({
+      type: ChatMessageType.Assistant,
+      content: 'I encountered an error generating the query. Please try again or rephrase your request.'
+    });
+    return;
+  }
 
   let codeText = extractCodeBlock(fullCodeText);
   if (!codeText.includes('const query = Noodl.Records.query;')) {
@@ -104,113 +116,121 @@ export async function execute(
   let questionIndex = 0;
   const result = [''];
 
-  await chatStreamXml({
-    messages: [
-      {
-        role: 'system',
-        content: QUERY_CONTEXT_EXPLAINER()
+  try {
+    await chatStreamXml({
+      messages: [
+        {
+          role: 'system',
+          content: QUERY_CONTEXT_EXPLAINER()
+        },
+        { role: 'user', content: codeText }
+      ],
+      provider: {
+        model: OpenAiStore.getModel(),
+        temperature: 0.0,
+        max_tokens: 2048
       },
-      { role: 'user', content: codeText }
-    ],
-    provider: {
-      model: OpenAiStore.getModel(),
-      temperature: 0.0,
-      max_tokens: 2048
-    },
-    onStream(tagName, text) {
-      // OpenAI streaming API sends empty string as final chunk to signal end of stream
-      // Early return prevents unnecessary processing
-      if (text.length === 0) {
-        return;
-      }
-
-      console.log('[stream]', tagName, text);
-
-      switch (tagName) {
-        case 'explain': {
-          result[result.length - 1] = text;
-          break;
+      onStream(tagName, text) {
+        // OpenAI streaming API sends empty string as final chunk to signal end of stream
+        // Early return prevents unnecessary processing
+        if (text.length === 0) {
+          return;
         }
 
-        case 'Input': {
-          result[result.length - 1] = wrapInput(text);
-          break;
+        console.log('[stream]', tagName, text);
+
+        switch (tagName) {
+          case 'explain': {
+            result[result.length - 1] = text;
+            break;
+          }
+
+          case 'Input': {
+            result[result.length - 1] = wrapInput(text);
+            break;
+          }
+
+          case 'Output': {
+            result[result.length - 1] = wrapOutput(text);
+            break;
+          }
         }
 
-        case 'Output': {
-          result[result.length - 1] = wrapOutput(text);
-          break;
-        }
-      }
-
-      if (['explain', 'Input', 'Output'].includes(tagName)) {
-        chatHistory.updateLast({
-          content: result.join('')
-        });
-      }
-    },
-    onTagOpen(tagName) {
-      switch (tagName) {
-        case 'Input':
-        case 'Output': {
-          result.push('');
-          break;
-        }
-      }
-    },
-    onTagEnd(tagName, fullText) {
-      console.log('[done]', tagName, fullText);
-
-      switch (tagName) {
-        case 'label': {
-          node.setLabel(fullText);
-          break;
-        }
-
-        case 'explain': {
-          result[result.length - 1] = fullText;
-          result.push('');
-          break;
-        }
-
-        case 'Input': {
-          result[result.length - 1] = wrapInput(fullText);
-          result.push('');
-          break;
-        }
-
-        case 'Output': {
-          result[result.length - 1] = wrapOutput(fullText);
-          result.push('');
-          break;
-        }
-
-        case 'question': {
-          const suggestions: ChatSuggestion[] =
-            (chatHistory.messages[chatHistory.messages.length - 1].metadata.suggestions as ChatSuggestion[]) || [];
-          suggestions[questionIndex] = {
-            id: guid(),
-            text: fullText.endsWith('?') ? fullText : fullText + '?'
-          };
-
+        if (['explain', 'Input', 'Output'].includes(tagName)) {
           chatHistory.updateLast({
-            metadata: {
-              suggestions
-            }
+            content: result.join('')
           });
+        }
+      },
+      onTagOpen(tagName) {
+        switch (tagName) {
+          case 'Input':
+          case 'Output': {
+            result.push('');
+            break;
+          }
+        }
+      },
+      onTagEnd(tagName, fullText) {
+        console.log('[done]', tagName, fullText);
 
-          questionIndex++;
-          break;
+        switch (tagName) {
+          case 'label': {
+            node.setLabel(fullText);
+            break;
+          }
+
+          case 'explain': {
+            result[result.length - 1] = fullText;
+            result.push('');
+            break;
+          }
+
+          case 'Input': {
+            result[result.length - 1] = wrapInput(fullText);
+            result.push('');
+            break;
+          }
+
+          case 'Output': {
+            result[result.length - 1] = wrapOutput(fullText);
+            result.push('');
+            break;
+          }
+
+          case 'question': {
+            const suggestions: ChatSuggestion[] =
+              (chatHistory.messages[chatHistory.messages.length - 1].metadata.suggestions as ChatSuggestion[]) || [];
+            suggestions[questionIndex] = {
+              id: guid(),
+              text: fullText.endsWith('?') ? fullText : fullText + '?'
+            };
+
+            chatHistory.updateLast({
+              metadata: {
+                suggestions
+              }
+            });
+
+            questionIndex++;
+            break;
+          }
+        }
+
+        if (['explain', 'Input', 'Output'].includes(tagName)) {
+          chatHistory.updateLast({
+            content: result.join('')
+          });
         }
       }
-
-      if (['explain', 'Input', 'Output'].includes(tagName)) {
-        chatHistory.updateLast({
-          content: result.join('')
-        });
-      }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Explanation generation failed:', error);
+    // Still keep the code, just show simple explanation
+    chatHistory.updateLast({
+      content: 'Query code has been generated and set successfully.'
+    });
+  }
 }
 
 const QUERY_CONTEXT_GENERAL_RULES = `###Instructions###
