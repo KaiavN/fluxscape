@@ -45,10 +45,20 @@ export async function handleSuggestionCommand(prompt: string, statusCallback: (s
     { role: 'user', content: p }
   ];
 
-  const response = await makeChatRequest(OpenAiStore.getModel(), messages);
-  console.log(response);
+  try {
+    const response = await makeChatRequest(OpenAiStore.getModel(), messages);
+    console.log(response);
 
-  return JSON.parse(response.content);
+    if (!response || !response.content) {
+      console.error('No response from suggestion API');
+      return [];
+    }
+
+    return JSON.parse(response.content);
+  } catch (error) {
+    console.error('Suggestion generation failed:', error);
+    return [];
+  }
 }
 
 const nameMap = {

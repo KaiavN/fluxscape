@@ -8,16 +8,16 @@ import { guid } from '@noodl-utils/utils';
 
 export async function makeImageGenerationRequest(prompt: string): Promise<{ type: string; data: Buffer }> {
   const OPENAI_API_KEY = OpenAiStore.getApiKey();
-  const response = await fetch(`https://api.openai.com/v1/images/generations`, {
+  const response = await fetch(`https://openrouter.ai/api/v1/images/generations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + OPENAI_API_KEY
     },
     body: JSON.stringify({
+      model: OpenAiStore.getImageModel(),
       prompt,
       n: 1,
-      size: '512x512',
       response_format: 'b64_json'
     })
   });
