@@ -2,9 +2,14 @@ import { AiAssistantModel } from '@noodl-models/AiAssistant/AiAssistantModel';
 import { AiUtils } from '@noodl-models/AiAssistant/context/ai-utils';
 import { Model } from '@noodl-utils/model';
 
+// Memory management constants
+const MAX_MESSAGES = 50; // Maximum messages before truncation
+const TRUNCATE_TO = 30; // Keep most recent N messages after truncation
+
 export enum ChatMessageType {
   User = 'user',
-  Assistant = 'assistant'
+  Assistant = 'assistant',
+  System = 'system'
 }
 
 export enum ChatHistoryState {
@@ -116,8 +121,25 @@ export class ChatHistory extends Model<ChatHistoryEvent, ChatHistoryEvents> {
 
     this.messages.push(message as ChatMessage);
     this.notifyListeners(ChatHistoryEvent.MessagesChanged);
+    this.truncateIfNeeded();
 
     return message.snowflakeId;
+  }
+
+  /**
+   * Truncates old messages when limit exceeded, keeping most recent messages
+   * Preserves at least first message (system prompt) if it exists
+   */
+  private truncateIfNeeded(): void {
+    if (this._messages.length <= MAX_MESSAGES) return;
+    
+    // Keep first message (usually system prompt) and most recent messages
+    const firstMessage = this._messages[0]?.type === ChatMessageType.System ? [this._messages[0]] : [];
+    const recentMessages = this._messages.slice(-TRUNCATE_TO);
+    
+    this._messages = [...firstMessage, ...recentMessages];
+    
+    console.log(`Chat history truncated to ${this._messages.length} messages`);
   }
 
   updateLast(data?: Partial<Pick<ChatMessage, 'content' | 'metadata'>>) {
