@@ -205,7 +205,8 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
               await filesystem.removeFile(filePath);
             }
           } catch (error) {
-            console.error('Failed to load old AI file.', error);
+            console.error('Failed to migrate old AI conversation data:', error);
+            ToastLayer.showError('Failed to migrate old AI conversation data. Your AI node may not have historical context.');
           }
         }
 
