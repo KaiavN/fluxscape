@@ -97,7 +97,7 @@ export async function handleFormatCommand(
             if (key === 'x' || key === 'y') {
               const numValue = parseFloat(value);
               if (!isNaN(numValue)) {
-                node.setAttribs({ [key]: numValue });
+                node[key] = numValue;
                 modificationsApplied++;
               }
             } else {
@@ -318,7 +318,7 @@ function transformValue(name: string, value: string): any {
 
   // Handle boolean values
   if (name === 'clip' || name === 'useLabel') {
-    return value === 'true' || value === true;
+    return value === 'true';
   }
 
   // Handle numeric values
