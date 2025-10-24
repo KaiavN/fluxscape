@@ -2,6 +2,24 @@ import SchemaHandler from '@noodl-utils/schemahandler';
 import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 /**
+ * Database schema property definition
+ */
+interface DatabaseSchemaProperty {
+  type: string;
+  targetClass?: string;
+}
+
+/**
+ * Database collection with schema definition
+ */
+interface DatabaseCollection {
+  name: string;
+  schema: {
+    properties: Record<string, DatabaseSchemaProperty>;
+  };
+}
+
+/**
  * Retry database fetch with exponential backoff
  */
 async function retryDatabaseFetch(maxRetries: number = 2): Promise<boolean> {
@@ -78,7 +96,7 @@ export async function extractDatabaseSchema() {
   return dbCollectionsSource;
 }
 
-export async function extractDatabaseSchemaJSON(): Promise<{ name: string; schema: TSFixme }[]> {
+export async function extractDatabaseSchemaJSON(): Promise<DatabaseCollection[]> {
   const schema = SchemaHandler.instance;
   if (typeof schema.haveCloudServices === 'undefined') {
     console.error('Missing database schema');
@@ -103,7 +121,7 @@ export async function extractDatabaseSchemaJSON(): Promise<{ name: string; schem
   return Object.keys(schema.dbCollections).map((key) => schema.dbCollections[key]);
 }
 
-export function databaseSchemaCompact(schema: TSFixme): { name: string; compact: string }[] {
+export function databaseSchemaCompact(schema: DatabaseCollection[]): { name: string; compact: string }[] {
   return schema.map((x) => ({
     name: x.name,
     compact: Object.keys(x.schema.properties).join(',')
