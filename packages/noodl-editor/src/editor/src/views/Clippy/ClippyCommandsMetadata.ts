@@ -160,7 +160,7 @@ export const copilotNodeCommands: CopilotCommandMetadata[] = [
     description: 'Generate a Chart.js chart from data',
     placeholder: 'What should the chart show?',
     type: PopupItemType.Visual,
-    icon: IconName.Chart,
+    icon: IconName.Cards,
     availableOnFrontend: true,
     availableOnBackend: false,
     examples: ['Show a bar chart of sales by month', 'Create a pie chart of user types']

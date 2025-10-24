@@ -3,7 +3,7 @@ import { AiNodeTemplate, IAiCopilotContext } from '@noodl-models/AiAssistant/int
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 
 export const template: AiNodeTemplate = {
-  type: 'data',
+  type: 'blue',
   name: 'REST2',
   nodeDisplayName: 'API Call',
   onMessage: async ({ node, chatHistory, chatStreamXml }: IAiCopilotContext) => {
