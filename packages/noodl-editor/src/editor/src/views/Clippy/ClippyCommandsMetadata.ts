@@ -58,10 +58,22 @@ export const promptToNodeCommands: CommandMetadata[] = [
       'Four kittens with cool sunshades',
       'The worlds fastest car on holiday'
     ]
+  },
+  {
+    title: '/Suggest',
+    requireGPT4: true,
+    tag: 'Suggest Prompt',
+    description: 'Get suggestions for improvements',
+    placeholder: 'What to get suggestions for',
+    type: PopupItemType.Custom,
+    icon: IconName.Question,
+    availableOnFrontend: true,
+    availableOnBackend: false,
+    examples: ['What feature should I add next?', 'How can the form be improved?']
   }
 ];
 
-export const copilotNodeInstaPromptable = ['/function', '/read from database', '/write to database'];
+export const copilotNodeInstaPromptable = ['/function', '/read from database', '/write to database', '/chart'];
 export const copilotNodeCommands: CopilotCommandMetadata[] = [
   {
     requireGPT4: false,
@@ -122,33 +134,20 @@ export const copilotNodeCommands: CopilotCommandMetadata[] = [
     availableOnFrontend: true,
     availableOnBackend: true,
     examples: ['Get an array of numbers, calculate the average, and save that to the current users score attribute']
+  },
+  {
+    requireGPT4: true,
+    templateId: 'chart',
+    title: '/Chart',
+    tag: 'Chart',
+    description: 'Generate a Chart.js chart from data',
+    placeholder: 'What should the chart show?',
+    type: PopupItemType.Visual,
+    icon: IconName.Chart,
+    availableOnFrontend: true,
+    availableOnBackend: false,
+    examples: ['Show a bar chart of sales by month', 'Create a pie chart of user types']
   }
 ];
 
-export const comingSoonCommands: CommandMetadata[] = [
-  {
-    requireGPT4: true,
-    // templateId: 'chart',
-    title: '/Chart',
-    tag: 'Chart Prompt',
-    description: 'Generate a chart that can display data',
-    placeholder: '',
-    type: PopupItemType.Visual,
-    icon: IconName.Question,
-    availableOnFrontend: true,
-    availableOnBackend: false,
-    examples: []
-  },
-  {
-    title: '/Suggest',
-    requireGPT4: true,
-    tag: 'Suggest Prompt',
-    description: 'Get suggestions',
-    placeholder: 'What to get suggestions for',
-    type: PopupItemType.Visual,
-    icon: IconName.Question,
-    availableOnFrontend: true,
-    availableOnBackend: false,
-    examples: ['What feature should I add next?', 'How can the form be improved?']
-  }
-];
+export const comingSoonCommands: CommandMetadata[] = [];
