@@ -205,7 +205,8 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
               await filesystem.removeFile(filePath);
             }
           } catch (error) {
-            console.error('Failed to load old AI file.', error);
+            console.error('Failed to migrate old AI conversation data:', error);
+            ToastLayer.showError('Failed to migrate old AI conversation data. Your AI node may not have historical context.');
           }
         }
 
@@ -247,8 +248,17 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
     context.node.metadata.prompt = context.chatHistory.toJSON();
   }
 
-  public async createNode(templateId: string, parentModel: NodeGraphNode, pos: TSFixme) {
-    function createNodes(nodeset: NodeGraphNodeSet, pos?: TSFixme, parentModel?: NodeGraphNode, toastMessage?: string) {
+  public async createNode(
+    templateId: string, 
+    parentModel: NodeGraphNode | null, 
+    pos: { x: number; y: number } | null
+  ): Promise<AiCopilotContext> {
+    function createNodes(
+      nodeset: NodeGraphNodeSet, 
+      pos?: { x: number; y: number } | null, 
+      parentModel?: NodeGraphNode | null, 
+      toastMessage?: string
+    ): NodeGraphNode[] {
       const nodes: NodeGraphNode[] = [];
       if (parentModel) {
         for (const node of nodeset.nodes) {
@@ -311,7 +321,14 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
 
     // NOTE: This will create a clone of the nodeset, so the ids will be changed
     const insertedNodes = createNodes(nodeset, pos, parentModel, `Created AI Node`);
-    // HACK: Expect only one node back
+    
+    // Templates always create a single AI node by design
+    // If this assumption changes in future, refactor to handle multiple nodes
+    if (insertedNodes.length !== 1) {
+      console.error('Expected 1 AI node but got', insertedNodes.length);
+      throw new Error('Template created unexpected number of nodes');
+    }
+    
     return this.createContext(insertedNodes[0]);
   }
 

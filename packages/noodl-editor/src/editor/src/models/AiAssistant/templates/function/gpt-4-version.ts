@@ -134,7 +134,51 @@ A["FUNCTION"]`;
       content: fullText
     });
 
-    // TODO: If zero suggestions generate a new suggestions?
+    // Generate new suggestions if none exist from previous message
+    if (suggestions.length === 0) {
+      try {
+        const suggestionPrompt = `Based on this function and the user's question, suggest 3 follow-up questions they might ask:
+    
+Function:
+${currentScript || 'No function yet'}
+
+User Question:
+${lastMessage}
+
+Return only 3 short questions, one per line, ending with "?"`;
+
+        const suggestionResponse = await chatStream({
+          provider: {
+            model: OpenAiStore.getModel(),
+            temperature: 0.7,
+            max_tokens: 200
+          },
+          messages: [
+            { role: 'system', content: 'You generate helpful follow-up questions for code discussions.' },
+            { role: 'user', content: suggestionPrompt }
+          ]
+        });
+        
+        // Parse line-separated questions
+        suggestions = suggestionResponse
+          .split('\n')
+          .filter(line => line.trim().endsWith('?'))
+          .slice(0, 3)
+          .map(text => ({ id: guid(), text: text.trim() }));
+          
+        if (suggestions.length > 0) {
+          chatHistory.updateLast({
+            metadata: {
+              suggestions
+            }
+          });
+          console.log('Generated suggestions:', suggestions);
+        }
+      } catch (error) {
+        console.error('Failed to generate suggestions:', error);
+        // Keep empty array, not critical to chat functionality
+      }
+    }
 
     return;
   }

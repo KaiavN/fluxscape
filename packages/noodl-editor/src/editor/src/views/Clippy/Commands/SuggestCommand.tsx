@@ -1,5 +1,6 @@
 import { NodeGraphContextTmp } from '@noodl-contexts/NodeGraphContext/NodeGraphContext';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
+import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 import { makeChatRequest } from './utils';
 
@@ -51,12 +52,21 @@ export async function handleSuggestionCommand(prompt: string, statusCallback: (s
 
     if (!response || !response.content) {
       console.error('No response from suggestion API');
+      ToastLayer.showError('No suggestions generated. The AI didn\'t return any results. Please try a different prompt.');
       return [];
     }
 
-    return JSON.parse(response.content);
+    try {
+      return JSON.parse(response.content);
+    } catch (parseError) {
+      console.error('Failed to parse suggestions response:', parseError);
+      console.error('Response content:', response.content);
+      ToastLayer.showError('Failed to parse suggestions response. The AI returned an invalid format.');
+      return [];
+    }
   } catch (error) {
     console.error('Suggestion generation failed:', error);
+    ToastLayer.showError(`Failed to generate suggestions: ${error.message || 'Unknown error'}`);
     return [];
   }
 }

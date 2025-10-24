@@ -1,5 +1,6 @@
 import { NodeGraphContextTmp } from '@noodl-contexts/NodeGraphContext/NodeGraphContext';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
+import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 import { AiCopilotContext } from '@noodl-models/AiAssistant/AiCopilotContext';
 import { NodeGraphModel, NodeGraphNode, NodeGraphNodeJSON } from '@noodl-models/nodegraphmodel';
@@ -25,7 +26,8 @@ export async function handleUICommand(
   let parentModel = selectedNodes[0]?.model;
   const nodeGraphModel = options.nodeGraphModel || NodeGraphContextTmp.nodeGraph.model;
 
-  // HACK: To support custom node graph model
+  // Support for custom node graph model (used in testing and preview scenarios)
+  // When custom graph provided, always add nodes as roots (no parent)
   if (options.nodeGraphModel) {
     parentModel = null;
   }
@@ -121,7 +123,14 @@ export async function handleUICommand(
         if (attributes.prompt) {
           makeImageGenerationRequest(attributes.prompt)
             .then((imageData) => saveImageDataToDisk(imageData))
-            .then((url) => node.setParameter('src', url));
+            .then((url) => {
+              node.setParameter('src', url);
+            })
+            .catch((error) => {
+              console.error('Image generation failed for node:', node.id, error);
+              ToastLayer.showError(`Failed to generate image: ${error.message || 'Unknown error'}`);
+              // Node will not have an image - user can add one manually or regenerate
+            });
         } else {
           const width = attributes.width || 100;
           const height = attributes.height || 100;
