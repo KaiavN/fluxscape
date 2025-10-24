@@ -87,77 +87,86 @@ export const template: AiNodeTemplate = {
           ...history
         ];
 
-    const fullText = await chatStreamXml({
-      messages,
-      provider: {
-        model: modelName,
-        temperature: 0.5,
-        max_tokens: 2048
-      },
-      onStream(tagName, text) {
-        // OpenAI streaming API sends empty string as final chunk to signal end of stream
-        // Early return prevents unnecessary processing
-        if (text.length === 0) {
-          return;
-        }
-
-        console.log('[stream]', tagName, text);
-
-        switch (tagName) {
-          case 'explain': {
-            chatHistory.updateLast({
-              content: text
-            });
-            break;
-          }
-        }
-      },
-      onTagOpen(tagName) {
-        console.log('[open]', tagName);
-
-        switch (tagName) {
-          case 'explain': {
-            chatHistory.add({
-              type: ChatMessageType.Assistant,
-              content: ''
-            });
-            break;
-          }
-        }
-      },
-      onTagEnd(tagName, fullText) {
-        console.log('[done]', tagName, fullText);
-
-        switch (tagName) {
-          case 'function': {
-            const prefix = 'const Records = Noodl.Records;';
-            const fullCode = fullText.includes(prefix) ? fullText : prefix + '\n\n' + fullText;
-
-            // Set the parameter
-            node.setParameter('functionScript', fullCode);
-
-            // Save it in the history, so it will be possible to go back and forth.
-            chatHistory.updateLast({
-              metadata: {
-                code: fullCode
-              }
-            });
-
-            chatHistory.removeActivity(activityCodeGenId);
-            break;
+    try {
+      const fullText = await chatStreamXml({
+        messages,
+        provider: {
+          model: modelName,
+          temperature: 0.5,
+          max_tokens: 2048
+        },
+        onStream(tagName, text) {
+          // OpenAI streaming API sends empty string as final chunk to signal end of stream
+          // Early return prevents unnecessary processing
+          if (text.length === 0) {
+            return;
           }
 
-          case 'explain': {
-            chatHistory.updateLast({
-              content: fullText
-            });
-            break;
+          console.log('[stream]', tagName, text);
+
+          switch (tagName) {
+            case 'explain': {
+              chatHistory.updateLast({
+                content: text
+              });
+              break;
+            }
+          }
+        },
+        onTagOpen(tagName) {
+          console.log('[open]', tagName);
+
+          switch (tagName) {
+            case 'explain': {
+              chatHistory.add({
+                type: ChatMessageType.Assistant,
+                content: ''
+              });
+              break;
+            }
+          }
+        },
+        onTagEnd(tagName, fullText) {
+          console.log('[done]', tagName, fullText);
+
+          switch (tagName) {
+            case 'function': {
+              const prefix = 'const Records = Noodl.Records;';
+              const fullCode = fullText.includes(prefix) ? fullText : prefix + '\n\n' + fullText;
+
+              // Set the parameter
+              node.setParameter('functionScript', fullCode);
+
+              // Save it in the history, so it will be possible to go back and forth.
+              chatHistory.updateLast({
+                metadata: {
+                  code: fullCode
+                }
+              });
+
+              chatHistory.removeActivity(activityCodeGenId);
+              break;
+            }
+
+            case 'explain': {
+              chatHistory.updateLast({
+                content: fullText
+              });
+              break;
+            }
           }
         }
-      }
-    });
+      });
 
-    console.log('fullText', fullText);
+      console.log('fullText', fullText);
+    } catch (error) {
+      console.error('CRUD code generation failed:', error);
+      chatHistory.removeActivity(activityCodeGenId);
+      chatHistory.add({
+        type: ChatMessageType.Assistant,
+        content: 'I encountered an error generating the database operation. Please try again or rephrase your request.'
+      });
+    }
 
     chatHistory.removeActivity(activityCodeGenId);
     chatHistory.removeActivity(activityId);
