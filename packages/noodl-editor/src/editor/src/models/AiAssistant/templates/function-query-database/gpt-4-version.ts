@@ -40,14 +40,26 @@ export async function execute(
         ...history
       ];
 
-  const fullCodeText = await chatStream({
-    provider: {
-      model: OpenAiStore.getModel(),
-      temperature: 0.0,
-      max_tokens: 2048
-    },
-    messages
-  });
+  let fullCodeText;
+  try {
+    fullCodeText = await chatStream({
+      provider: {
+        model: OpenAiStore.getModel(),
+        temperature: 0.0,
+        max_tokens: 2048
+      },
+      messages
+    });
+  } catch (error) {
+    console.error('Query code generation failed:', error);
+    const activityCodeGenId = 'code-generation';
+    chatHistory.removeActivity(activityCodeGenId);
+    chatHistory.add({
+      type: ChatMessageType.Assistant,
+      content: 'I encountered an error generating the query. Please try again or rephrase your request.'
+    });
+    return;
+  }
 
   let codeText = extractCodeBlock(fullCodeText);
   if (!codeText.includes('const query = Noodl.Records.query;')) {
