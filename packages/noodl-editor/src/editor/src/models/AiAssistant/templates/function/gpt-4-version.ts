@@ -44,24 +44,31 @@ Q["Can we do it without an api?"]
 A["FUNCTION"]`;
   }
 
-  const question = await AiQuery.chatReAct({
-    messages: [
-      {
-        role: 'system',
-        content: questionPrompt
-      },
-      {
-        role: 'user',
-        content: `Q["${chatHistory.messages.at(-1).content}"]`
+  let question;
+  try {
+    question = await AiQuery.chatReAct({
+      messages: [
+        {
+          role: 'system',
+          content: questionPrompt
+        },
+        {
+          role: 'user',
+          content: `Q["${chatHistory.messages.at(-1).content}"]`
+        }
+      ],
+      provider: {
+        // NOTE: Tried with GPT 3.5 here before.
+        //       Then this question doesnt work: "Can you make a function that starts recording from the microphone when it gets a start signal and stops recording when it gets a stop signal"
+        model: OpenAiStore.getModel(),
+        temperature: 0.0
       }
-    ],
-    provider: {
-      // NOTE: Tried with GPT 3.5 here before.
-      //       Then this question doesnt work: "Can you make a function that starts recording from the microphone when it gets a start signal and stops recording when it gets a stop signal"
-      model: OpenAiStore.getModel(),
-      temperature: 0.0
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Classification failed, defaulting to FUNCTION:', error);
+    // Default to FUNCTION if classification fails
+    question = { commands: [{ args: ['FUNCTION'] }] };
+  }
 
   if (question.commands.length === 0) {
     chatHistory.add({
