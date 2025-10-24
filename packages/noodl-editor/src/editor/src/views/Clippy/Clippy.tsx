@@ -33,7 +33,7 @@ import {
 } from './ClippyCommandsMetadata';
 import { ClippyLogo } from './components/ClippyLogo/ClippyLogo';
 import GrowingTextArea from './components/GrowingTextArea/GrowingTextArea';
-import { CommandResultItem, handleCommand } from './HackyClippyBackend';
+import { CommandResultItem, handleCommand } from './ClippyCommandHandler';
 
 export default function Clippy() {
   const [firstInputValue, setFirstInputValue] = useState('');
