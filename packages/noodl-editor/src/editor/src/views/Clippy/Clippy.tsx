@@ -2,7 +2,7 @@ import { useNodeGraphContext } from '@noodl-contexts/NodeGraphContext/NodeGraphC
 import { useModernModel } from '@noodl-hooks/useModel';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { FeedbackType } from '@noodl-constants/FeedbackType';
 import { AiAssistantModel } from '@noodl-models/AiAssistant';
@@ -36,16 +36,26 @@ import GrowingTextArea from './components/GrowingTextArea/GrowingTextArea';
 import { CommandResultItem, handleCommand } from './ClippyCommandHandler';
 
 export default function Clippy() {
-  const [firstInputValue, setFirstInputValue] = useState('');
-  const [secondInputValue, setSecondInputValue] = useState('');
-  const [isInputOpen, setIsInputOpen] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [selectedPromptTitle, setSelectedPromptTitle] = useState(null);
-  const [isAiThinking, setIsAiThinking] = useState(false);
-  const [aiThinkingStatus, setAIThinkingStatus] = useState('');
-  const [shouldFirstInputAutofocus, setShouldFirstInputAutofocus] = useState(false);
-  const [isTextareaInsteadOfInput, setIsTextareaInsteadOfInput] = useState(false);
-  const [commandResultItems, setCommandResultItems] = useState<CommandResultItem[]>(null); //commands might generate follow-up items
+  // Consolidate related state into logical groups
+  const [inputState, setInputState] = useState({
+    firstValue: '',
+    secondValue: '',
+    isTextarea: false,
+    shouldAutofocus: false
+  });
+
+  const [uiState, setUiState] = useState({
+    isOpen: false,
+    isFocused: false,
+    selectedPromptTitle: null
+  });
+
+  const [aiState, setAiState] = useState({
+    isThinking: false,
+    thinkingStatus: '',
+    commandResultItems: null
+  });
+
   const firstInputRef = useRef(null);
   const secondInputRef = useRef(null);
   const secondTextAreaRef = useRef(null);
@@ -65,7 +75,8 @@ export default function Clippy() {
   const comingSoonItems = comingSoonCommands.filter(commandFilter);
   const disabledDueToGpt3Items = []; 
 
-  const ALL_OPTIONS = [...promptToNode, ...copilotNodes];
+  // Memoize computed array to prevent recreation on every render
+  const ALL_OPTIONS = useMemo(() => [...promptToNode, ...copilotNodes], [promptToNode, copilotNodes]);
 
   const user = LocalUserIdentity.getUserInfo();
 
@@ -76,15 +87,15 @@ export default function Clippy() {
     } else {
       setHasApiKey(false);
     }
-  }, [isInputOpen]);
+  }, [uiState.isOpen]);
 
   //check for clicks outside clippy, which should close it if it's open and not thinking
   useEffect(() => {
-    if (!isInputOpen || isAiThinking) return;
+    if (!uiState.isOpen || aiState.isThinking) return;
 
     function handleClickOutside(event) {
       if (ref.current && !ref.current.contains(event.target)) {
-        setIsInputOpen(false);
+        setUiState(prev => ({ ...prev, isOpen: false }));
       }
     }
 
@@ -92,71 +103,79 @@ export default function Clippy() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [ref, isInputOpen, isAiThinking]);
+  }, [ref, uiState.isOpen, aiState.isThinking]);
 
   //reset everything when the close animation is done
   useEffect(() => {
-    if (isInputOpen) return;
+    if (uiState.isOpen) return;
 
     const speed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--speed-quick'));
 
     const id = setTimeout(() => closeAndResetInput(), speed);
     return () => clearTimeout(id);
-  }, [isInputOpen]);
+  }, [uiState.isOpen]);
 
+  // Debounce command detection to reduce unnecessary updates
   useEffect(() => {
-    const split = firstInputValue.split(' ');
-    if (split.length <= 1 || split[0][0] !== '/') return;
+    const timeoutId = setTimeout(() => {
+      const split = inputState.firstValue.split(' ');
+      if (split.length <= 1 || split[0][0] !== '/') return;
 
-    const highlightedOption = ALL_OPTIONS.find(
-      (item) => item.title.toLowerCase().indexOf(split[0].toLowerCase()) !== -1
-    );
+      const highlightedOption = ALL_OPTIONS.find(
+        (item) => item.title.toLowerCase().indexOf(split[0].toLowerCase()) !== -1
+      );
 
-    if (highlightedOption) {
-      setSelectedPromptTitle(highlightedOption.title);
-    }
-  }, [firstInputValue, ALL_OPTIONS]);
+      if (highlightedOption) {
+        setUiState(prev => ({ ...prev, selectedPromptTitle: highlightedOption.title }));
+      }
+    }, 150); // 150ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [inputState.firstValue, ALL_OPTIONS]);
 
   const closeAndResetInput = useCallback(() => {
-    setIsInputOpen(false);
-    setFirstInputValue('');
-    setSecondInputValue('');
-    setIsInputFocused(false);
-    setSelectedPromptTitle(null);
-    setIsAiThinking(false);
-    setShouldFirstInputAutofocus(false);
-    setCommandResultItems(null);
+    setUiState({ isOpen: false, isFocused: false, selectedPromptTitle: null });
+    setInputState({ firstValue: '', secondValue: '', isTextarea: false, shouldAutofocus: false });
+    setAiState({ isThinking: false, thinkingStatus: '', commandResultItems: null });
   }, []);
 
   const restartInput = useCallback(() => {
-    setFirstInputValue('');
-    setSecondInputValue('');
-    setSelectedPromptTitle(null);
+    setInputState(prev => ({ ...prev, firstValue: '', secondValue: '' }));
+    setUiState(prev => ({ ...prev, selectedPromptTitle: null }));
     setTimeout(() => {
-      firstInputRef.current.focus();
+      firstInputRef.current?.focus();
     }, 100);
-  }, []);
+  }, [firstInputRef]);
 
   const portalRoot = document.querySelector('.clippy-layer');
 
   if (!portalRoot) return null;
 
-  const highlightedOption =
-    firstInputValue?.charAt(0) === '/'
-      ? ALL_OPTIONS.find((item) => item.title.toLowerCase().indexOf(firstInputValue.toLowerCase()) !== -1)
-      : null;
+  // Memoize computed options to prevent recalculation on every render
+  const highlightedOption = useMemo(() => 
+    inputState.firstValue?.charAt(0) === '/'
+      ? ALL_OPTIONS.find((item) => item.title.toLowerCase().indexOf(inputState.firstValue.toLowerCase()) !== -1)
+      : null,
+    [inputState.firstValue, ALL_OPTIONS]
+  );
 
   const isRegularChat = false; // bring this back later: firstInputValue && firstInputValue.charAt(0) !== '/';
 
-  const selectedOption = selectedPromptTitle ? ALL_OPTIONS.find((item) => item.title === selectedPromptTitle) : null;
+  const selectedOption = useMemo(() => 
+    uiState.selectedPromptTitle 
+      ? ALL_OPTIONS.find((item) => item.title === uiState.selectedPromptTitle) 
+      : null,
+    [uiState.selectedPromptTitle, ALL_OPTIONS]
+  );
 
-  async function runCommand() {
+  // Memoize runCommand function to prevent recreation on every render
+  const runCommand = useCallback(async () => {
     const id = new Date().getTime().toString();
     closeAndResetInput();
 
     try {
       const command = selectedOption?.title.toLowerCase();
-      const prompt = secondInputValue;
+      const prompt = inputState.secondValue;
       tracker.track('AI Command', {
         command,
         prompt
@@ -170,12 +189,12 @@ export default function Clippy() {
         graph: nodeGraphContext.nodeGraph.activeComponent
       });
 
-      setAIThinkingStatus('Give me a second...');
+      setAiState(prev => ({ ...prev, thinkingStatus: 'Give me a second...' }));
       const res = await handleCommand(command, prompt, { nodeGraph: nodeGraphContext.nodeGraph }, (status) =>
-        setAIThinkingStatus(status)
+        setAiState(prev => ({ ...prev, thinkingStatus: status }))
       );
       if (res) {
-        setCommandResultItems(res);
+        setAiState(prev => ({ ...prev, commandResultItems: res }));
       }
     } catch (e) {
       console.error('AI command failed:', e);
@@ -184,15 +203,26 @@ export default function Clippy() {
     }
 
     aiAssistantModel.removeActivity(id);
-  }
+  }, [selectedOption, inputState.secondValue, nodeGraphContext, aiAssistantModel, closeAndResetInput]);
 
-  const initialPlaceholder = isInputOpen ? 'Select (or type) a command below' : 'Ask FluxScape AI';
-  const isPromptInWrongOrder = Boolean(!selectedOption) && Boolean(secondInputValue);
+  const initialPlaceholder = uiState.isOpen ? 'Select (or type) a command below' : 'Ask FluxScape AI';
+  const isPromptInWrongOrder = Boolean(!selectedOption) && Boolean(inputState.secondValue);
   const isOpenRouter = version === 'openrouter';
   // Limited Beta mode removed - OpenRouter is now required
   const isCommandsEnabled = version === 'openrouter' && hasApiKey;
 
   const versionLabel = version === 'openrouter' ? `OpenRouter (${OpenAiStore.getModel()})` : '';
+
+  // Memoize scaledPos calculation
+  const calculateScaledPos = useCallback(() => {
+    const panAndScale = nodeGraphContext.nodeGraph.getPanAndScale();
+    const x = Math.round(Math.random() * 100 + 50);
+    const y = Math.round(Math.random() * 100 + 50);
+    return {
+      x: x / panAndScale.scale - panAndScale.x,
+      y: y / panAndScale.scale - panAndScale.y
+    };
+  }, [nodeGraphContext]);
 
   return (
     <Portal portalRoot={portalRoot}>
@@ -200,20 +230,20 @@ export default function Clippy() {
         <div
           className={classNames(
             css.ClippyContainer,
-            isInputFocused && css.__isFocused,
-            isAiThinking && css.__isThinking
+            uiState.isFocused && css.__isFocused,
+            aiState.isThinking && css.__isThinking
           )}
           onClick={() => {
-            if (!isInputOpen) {
-              setShouldFirstInputAutofocus(false);
-              setIsInputOpen(true);
+            if (!uiState.isOpen) {
+              setInputState(prev => ({ ...prev, shouldAutofocus: false }));
+              setUiState(prev => ({ ...prev, isOpen: true }));
             }
           }}
         >
           <div className={css.ClippyContent}>
-            <div className={classNames(css.IconContainer, isInputOpen && css.__isOpen)}>
+            <div className={classNames(css.IconContainer, uiState.isOpen && css.__isOpen)}>
               <div className={classNames(css.ClippyIcon, isRegularChat && css.__isHidden)}>
-                <ClippyLogo isListening={isInputFocused} isDimmed={!isInputOpen} isThinking={isAiThinking} />
+                <ClippyLogo isListening={uiState.isFocused} isDimmed={!uiState.isOpen} isThinking={aiState.isThinking} />
               </div>
 
               <div className={classNames(css.UserBadge, !isRegularChat && css.__isHidden)}>
@@ -221,7 +251,7 @@ export default function Clippy() {
               </div>
             </div>
 
-            <div className={classNames(css.InputContainer, isInputOpen && css.__isOpen)}>
+            <div className={classNames(css.InputContainer, uiState.isOpen && css.__isOpen)}>
               <div className={css.InputWrapper}>
                 {Boolean(selectedOption) && (
                   <PromptTag
@@ -236,12 +266,12 @@ export default function Clippy() {
                 {!selectedOption && (
                   <TextInput
                     variant={TextInputVariant.Transparent}
-                    value={firstInputValue}
-                    placeholder={!isPromptInWrongOrder ? initialPlaceholder : secondInputValue}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
-                    onChange={(e) => setFirstInputValue(e.currentTarget.value)}
-                    isAutoFocus={shouldFirstInputAutofocus}
+                    value={inputState.firstValue}
+                    placeholder={!isPromptInWrongOrder ? initialPlaceholder : inputState.secondValue}
+                    onFocus={() => setUiState(prev => ({ ...prev, isFocused: true }))}
+                    onBlur={() => setUiState(prev => ({ ...prev, isFocused: false }))}
+                    onChange={(e) => setInputState(prev => ({ ...prev, firstValue: e.currentTarget.value }))}
+                    isAutoFocus={inputState.shouldAutofocus}
                     forwardedInputRef={firstInputRef}
                     onKeyDown={(e) => {
                       if (!isCommandsEnabled) return;
@@ -254,12 +284,11 @@ export default function Clippy() {
                     onEnter={() => {
                       if (!isCommandsEnabled) return;
 
-                      if (firstInputValue.charAt(0) === '/') {
-                        setSelectedPromptTitle(highlightedOption.title);
+                      if (inputState.firstValue.charAt(0) === '/') {
+                        setUiState(prev => ({ ...prev, selectedPromptTitle: highlightedOption.title }));
                       } else {
-                        const value = firstInputValue;
-                        setSecondInputValue(value);
-                        setFirstInputValue('');
+                        const value = inputState.firstValue;
+                        setInputState(prev => ({ ...prev, secondValue: value, firstValue: '' }));
                       }
                     }}
                   />
@@ -267,24 +296,24 @@ export default function Clippy() {
 
                 {Boolean(selectedOption) && (
                   <TextInput
-                    UNSAFE_className={classNames(isTextareaInsteadOfInput && css.__isHiddenInput)}
+                    UNSAFE_className={classNames(inputState.isTextarea && css.__isHiddenInput)}
                     variant={TextInputVariant.Transparent}
-                    value={secondInputValue}
+                    value={inputState.secondValue}
                     placeholder={selectedOption.placeholder}
                     isAutoFocus={true}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
-                    onChange={(e) => setSecondInputValue(e.currentTarget.value)}
-                    onScrollbarCreated={() => setIsTextareaInsteadOfInput(true)}
+                    onFocus={() => setUiState(prev => ({ ...prev, isFocused: true }))}
+                    onBlur={() => setUiState(prev => ({ ...prev, isFocused: false }))}
+                    onChange={(e) => setInputState(prev => ({ ...prev, secondValue: e.currentTarget.value }))}
+                    onScrollbarCreated={() => setInputState(prev => ({ ...prev, isTextarea: true }))}
                     onScrollbarRemoved={() => {
-                      setIsTextareaInsteadOfInput(false);
-                      secondInputRef.current.focus();
+                      setInputState(prev => ({ ...prev, isTextarea: false }));
+                      secondInputRef.current?.focus();
                     }}
                     forwardedInputRef={secondInputRef}
                     onKeyDown={(e) => {
                       switch (e.key) {
                         case 'Backspace':
-                          if (secondInputValue === '') {
+                          if (inputState.secondValue === '') {
                             restartInput();
                           }
                           return;
@@ -302,12 +331,12 @@ export default function Clippy() {
                   style={{ pointerEvents: isCommandsEnabled ? 'all' : 'none' }}
                   onClick={async () => {
                     if (!selectedOption) {
-                      firstInputRef.current.focus();
-                      setSelectedPromptTitle(highlightedOption.title);
+                      firstInputRef.current?.focus();
+                      setUiState(prev => ({ ...prev, selectedPromptTitle: highlightedOption.title }));
                     }
 
                     if (selectedOption) {
-                      secondInputRef.current.focus();
+                      secondInputRef.current?.focus();
                       await runCommand();
                     }
                   }}
@@ -315,23 +344,23 @@ export default function Clippy() {
                   <SendIcon />
                 </div>
 
-                <div className={classNames(css.ThinkingOverlay, isAiThinking && css.__isVisible)}>
-                  <Label size={LabelSize.Medium}>{aiThinkingStatus}</Label>
+                <div className={classNames(css.ThinkingOverlay, aiState.isThinking && css.__isVisible)}>
+                  <Label size={LabelSize.Medium}>{aiState.thinkingStatus}</Label>
                 </div>
               </div>
-              {Boolean(selectedOption) && isTextareaInsteadOfInput && isInputOpen && (
+              {Boolean(selectedOption) && inputState.isTextarea && uiState.isOpen && (
                 <div className={css.TextArea}>
                   <GrowingTextArea
-                    value={secondInputValue}
+                    value={inputState.secondValue}
                     onChange={(e) => {
-                      setSecondInputValue(e.currentTarget.value);
+                      setInputState(prev => ({ ...prev, secondValue: e.currentTarget.value }));
                       if (e.currentTarget.value === '') {
-                        setIsTextareaInsteadOfInput(false);
-                        secondInputRef.current.focus();
+                        setInputState(prev => ({ ...prev, isTextarea: false }));
+                        secondInputRef.current?.focus();
                       }
                     }}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
+                    onFocus={() => setUiState(prev => ({ ...prev, isFocused: true }))}
+                    onBlur={() => setUiState(prev => ({ ...prev, isFocused: false }))}
                     forwardedTextAreaRef={secondTextAreaRef}
                     isAutoFocus={true}
                     onKeyDown={(e) => {
@@ -354,7 +383,7 @@ export default function Clippy() {
 
         <div className={css.UglySpacingHackPleaseLookAway} />
 
-        <div className={classNames(css.ClippyPopup, isInputOpen && !isAiThinking && css.__isVisible)}>
+        <div className={classNames(css.ClippyPopup, uiState.isOpen && !aiState.isThinking && css.__isVisible)}>
           {isOpenRouter && !isCommandsEnabled && (
             <div className={css.ClippyNoApiKey}>
               <Title hasBottomSpacing>Add your OpenRouter API key</Title>
@@ -376,7 +405,7 @@ export default function Clippy() {
             </div>
           )}
 
-          {isCommandsEnabled && !selectedPromptTitle && !isRegularChat && (
+          {isCommandsEnabled && !uiState.selectedPromptTitle && !isRegularChat && (
             <>
               {isPromptInWrongOrder && (
                 <Label UNSAFE_style={{ padding: 12, marginTop: 2 }} size={LabelSize.Big} variant={FeedbackType.Danger}>
@@ -397,22 +426,12 @@ export default function Clippy() {
                       isHighlighted={highlightedOption ? highlightedOption.title === item.title : false}
                       onClick={() => {
                         if (copilotNodeInstaPromptable.includes(item.title.toLowerCase())) {
-                          setSelectedPromptTitle(item.title);
-                          setSecondInputValue(firstInputValue);
+                          setUiState(prev => ({ ...prev, selectedPromptTitle: item.title }));
+                          setInputState(prev => ({ ...prev, secondValue: prev.firstValue }));
                         } else {
-                          const panAndScale = nodeGraphContext.nodeGraph.getPanAndScale();
-
-                          const x = Math.round(Math.random() * 100 + 50);
-                          const y = Math.round(Math.random() * 100 + 50);
-
-                          const scaledPos = {
-                            x: x / panAndScale.scale - panAndScale.x,
-                            y: y / panAndScale.scale - panAndScale.y
-                          };
-
+                          const scaledPos = calculateScaledPos();
                           AiAssistantModel.instance.createNode(item.templateId, null, scaledPos);
-
-                          setIsInputOpen(false);
+                          setUiState(prev => ({ ...prev, isOpen: false }));
                         }
                       }}
                     />
@@ -431,7 +450,7 @@ export default function Clippy() {
                       icon={item.icon}
                       key={item.title}
                       isHighlighted={highlightedOption ? highlightedOption.title === item.title : false}
-                      onClick={() => setSelectedPromptTitle(item.title)}
+                      onClick={() => setUiState(prev => ({ ...prev, selectedPromptTitle: item.title }))}
                     />
                   ))}
                 </>
@@ -506,15 +525,15 @@ export default function Clippy() {
             </>
           )}
 
-          {Boolean(selectedPromptTitle) && selectedOption.examples && !commandResultItems && (
+          {Boolean(uiState.selectedPromptTitle) && selectedOption?.examples && !aiState.commandResultItems && (
             <>
               <SectionTitle title="Example prompts" />
               {selectedOption.examples.map((item, i) => (
                 <ExamplePrompt
                   prompt={item}
                   onClick={() => {
-                    setSecondInputValue(item);
-                    secondInputRef.current.focus();
+                    setInputState(prev => ({ ...prev, secondValue: item }));
+                    secondInputRef.current?.focus();
                   }}
                   key={item}
                 />
@@ -522,10 +541,10 @@ export default function Clippy() {
             </>
           )}
 
-          {Boolean(commandResultItems) && (
+          {Boolean(aiState.commandResultItems) && (
             <>
               <SectionTitle title="Example prompts" />
-              {commandResultItems.map((item, i) => (
+              {aiState.commandResultItems.map((item, i) => (
                 <PromptTagSuggestion
                   title={item.name}
                   description={item.description}
@@ -533,9 +552,9 @@ export default function Clippy() {
                   icon={IconName.UI}
                   key={i}
                   onClick={() => {
-                    setSelectedPromptTitle('/' + item.name);
-                    setSecondInputValue(item.prompt);
-                    setCommandResultItems(null);
+                    setUiState(prev => ({ ...prev, selectedPromptTitle: '/' + item.name }));
+                    setInputState(prev => ({ ...prev, secondValue: item.prompt }));
+                    setAiState(prev => ({ ...prev, commandResultItems: null }));
                   }}
                 />
               ))}
@@ -601,7 +620,8 @@ export default function Clippy() {
   );
 }
 
-function SectionTitle({ title }) {
+// Wrap child components with React.memo to prevent unnecessary re-renders
+const SectionTitle = React.memo(function SectionTitle({ title }) {
   return (
     <div className={css.SectionTitle}>
       <Label variant={TextType.Shy} size={LabelSize.Small}>
@@ -609,7 +629,7 @@ function SectionTitle({ title }) {
       </Label>
     </div>
   );
-}
+});
 
 interface PopupItemProps {
   title: string;
@@ -621,7 +641,7 @@ interface PopupItemProps {
   onClick?: () => void;
 }
 
-function PromptTagSuggestion({ title, description, type, icon, isHighlighted, isDisabled, onClick }: PopupItemProps) {
+const PromptTagSuggestion = React.memo(function PromptTagSuggestion({ title, description, type, icon, isHighlighted, isDisabled, onClick }: PopupItemProps) {
   return (
     <div
       className={classNames(
@@ -649,9 +669,9 @@ function PromptTagSuggestion({ title, description, type, icon, isHighlighted, is
       </div>
     </div>
   );
-}
+});
 
-function PromptTag({ title, type, onRemoveClick }) {
+const PromptTag = React.memo(function PromptTag({ title, type, onRemoveClick }) {
   return (
     <div className={classNames(css.PromptTagRoot, css[type])}>
       <Label size={LabelSize.Small} variant={TextType.DefaultContrast}>
@@ -663,9 +683,9 @@ function PromptTag({ title, type, onRemoveClick }) {
       </div>
     </div>
   );
-}
+});
 
-function ExamplePrompt({ prompt, onClick }) {
+const ExamplePrompt = React.memo(function ExamplePrompt({ prompt, onClick }) {
   return (
     <div className={css.ExamplePromptRoot}>
       <div className={css.ExamplePrompt} onClick={onClick}>
@@ -673,9 +693,9 @@ function ExamplePrompt({ prompt, onClick }) {
       </div>
     </div>
   );
-}
+});
 
-function SendIcon() {
+const SendIcon = React.memo(function SendIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -684,4 +704,4 @@ function SendIcon() {
       />
     </svg>
   );
-}
+});
