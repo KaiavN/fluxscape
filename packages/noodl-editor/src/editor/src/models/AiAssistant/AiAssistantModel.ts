@@ -248,8 +248,17 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
     context.node.metadata.prompt = context.chatHistory.toJSON();
   }
 
-  public async createNode(templateId: string, parentModel: NodeGraphNode, pos: TSFixme) {
-    function createNodes(nodeset: NodeGraphNodeSet, pos?: TSFixme, parentModel?: NodeGraphNode, toastMessage?: string) {
+  public async createNode(
+    templateId: string, 
+    parentModel: NodeGraphNode | null, 
+    pos: { x: number; y: number } | null
+  ): Promise<AiCopilotContext> {
+    function createNodes(
+      nodeset: NodeGraphNodeSet, 
+      pos?: { x: number; y: number } | null, 
+      parentModel?: NodeGraphNode | null, 
+      toastMessage?: string
+    ): NodeGraphNode[] {
       const nodes: NodeGraphNode[] = [];
       if (parentModel) {
         for (const node of nodeset.nodes) {
