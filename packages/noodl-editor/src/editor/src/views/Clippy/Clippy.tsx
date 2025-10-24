@@ -621,7 +621,7 @@ export default function Clippy() {
 }
 
 // Wrap child components with React.memo to prevent unnecessary re-renders
-const SectionTitle = React.memo(function SectionTitle({ title }) {
+const SectionTitle = React.memo(function SectionTitle({ title }: SectionTitleProps) {
   return (
     <div className={css.SectionTitle}>
       <Label variant={TextType.Shy} size={LabelSize.Small}>
