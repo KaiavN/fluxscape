@@ -168,17 +168,28 @@ A["FUNCTION"]`;
       ]
     : [{ role: 'system', content: FUNCTION_CODE_CONTEXT }, ...history];
 
-  const fullCodeText = await chatStream({
-    provider: {
-      model: OpenAiStore.getModel(),
-      temperature: 0.0,
-      max_tokens: 2048
-    },
-    messages,
-    onStream(fullText) {
-      console.log('code:', fullText);
-    }
-  });
+  let fullCodeText;
+  try {
+    fullCodeText = await chatStream({
+      provider: {
+        model: OpenAiStore.getModel(),
+        temperature: 0.0,
+        max_tokens: 2048
+      },
+      messages,
+      onStream(fullText) {
+        console.log('code:', fullText);
+      }
+    });
+  } catch (error) {
+    console.error('Code generation failed:', error);
+    chatHistory.removeActivity(activityCodeGenId);
+    chatHistory.add({
+      type: ChatMessageType.Assistant,
+      content: 'I encountered an error generating the function. Please try again or rephrase your request.'
+    });
+    return;
+  }
 
   // Not sure if it will just reply with the code or with backticks,
   // would be nice to make a better prompt to handle it.
