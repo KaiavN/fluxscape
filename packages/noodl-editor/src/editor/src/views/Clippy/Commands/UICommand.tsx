@@ -26,7 +26,8 @@ export async function handleUICommand(
   let parentModel = selectedNodes[0]?.model;
   const nodeGraphModel = options.nodeGraphModel || NodeGraphContextTmp.nodeGraph.model;
 
-  // HACK: To support custom node graph model
+  // Support for custom node graph model (used in testing and preview scenarios)
+  // When custom graph provided, always add nodes as roots (no parent)
   if (options.nodeGraphModel) {
     parentModel = null;
   }
