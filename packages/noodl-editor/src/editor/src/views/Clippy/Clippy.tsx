@@ -189,19 +189,10 @@ export default function Clippy() {
   const initialPlaceholder = isInputOpen ? 'Select (or type) a command below' : 'Ask FluxScape AI';
   const isPromptInWrongOrder = Boolean(!selectedOption) && Boolean(secondInputValue);
   const isOpenRouter = version === 'openrouter';
-  const isLimitedBeta = false; // TODO: version === 'limited-beta';
+  // Limited Beta mode removed - OpenRouter is now required
+  const isCommandsEnabled = version === 'openrouter' && hasApiKey;
 
-  let isCommandsEnabled = isLimitedBeta;
-  if (version === 'openrouter') {
-    isCommandsEnabled = hasApiKey;
-  }
-
-  let versionLabel = '';
-  if (version === 'openrouter') {
-    versionLabel = `OpenRouter (${OpenAiStore.getModel()})`;
-  } else if (isLimitedBeta) {
-    versionLabel = 'Limited Beta (gpt-3)';
-  }
+  const versionLabel = version === 'openrouter' ? `OpenRouter (${OpenAiStore.getModel()})` : '';
 
   return (
     <Portal portalRoot={portalRoot}>
