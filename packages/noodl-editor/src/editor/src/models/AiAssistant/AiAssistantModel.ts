@@ -312,7 +312,14 @@ export class AiAssistantModel extends Model<AiAssistantEvent, AiAssistantEvents>
 
     // NOTE: This will create a clone of the nodeset, so the ids will be changed
     const insertedNodes = createNodes(nodeset, pos, parentModel, `Created AI Node`);
-    // HACK: Expect only one node back
+    
+    // Templates always create a single AI node by design
+    // If this assumption changes in future, refactor to handle multiple nodes
+    if (insertedNodes.length !== 1) {
+      console.error('Expected 1 AI node but got', insertedNodes.length);
+      throw new Error('Template created unexpected number of nodes');
+    }
+    
     return this.createContext(insertedNodes[0]);
   }
 
