@@ -39,15 +39,40 @@ export namespace AiQuery {
     onTagOpen,
     onTagEnd
   }: AiCopilotChatStreamXmlArgs): Promise<string> {
+    // Debouncing state for stream updates
+    let streamBuffer: { tagName: string; text: string } | null = null;
+    let lastUpdateTime = 0;
+    const UPDATE_INTERVAL = 16; // ~60fps (milliseconds)
+
+    const flushBuffer = () => {
+      if (streamBuffer && onStream) {
+        onStream(streamBuffer.tagName, streamBuffer.text);
+      }
+      streamBuffer = null;
+    };
+
     const parser = new Parser(
       (tagName, text) => {
         console.debug(tagName, text);
+        
+        // Debounce rapid stream updates to reduce re-renders
+        const now = Date.now();
+        if (now - lastUpdateTime < UPDATE_INTERVAL) {
+          streamBuffer = { tagName, text }; // Buffer the update
+          return;
+        }
+        
+        lastUpdateTime = now;
         onStream && onStream(tagName, text);
       },
       (tagName, attributes) => {
+        // Keep structural changes immediate (no debouncing)
         onTagOpen && onTagOpen(tagName, attributes);
       },
       (tagName, fullText) => {
+        // Keep structural changes immediate (no debouncing)
+        // Flush any pending buffer before tag ends
+        flushBuffer();
         onTagEnd && onTagEnd(tagName, fullText);
       }
     );
@@ -63,6 +88,9 @@ export namespace AiQuery {
         }
       }
     });
+
+    // Ensure final buffered update is sent
+    flushBuffer();
 
     return parser.getFullText();
   }
