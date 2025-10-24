@@ -17,6 +17,7 @@ const AI_ASSISTANT_VERSION_KEY = 'aiAssistant.version';
 const AI_ASSISTANT_VERIFIED_KEY = 'aiAssistant.verified';
 const AI_ASSISTANT_ENDPOINT_KEY = 'aiAssistant.endpoint';
 const AI_ASSISTANT_MODEL_KEY = 'aiAssistant.model';
+const AI_ASSISTANT_IMAGE_MODEL_KEY = 'aiAssistant.imageModel';
 
 export type AiVersion = 'disabled' | 'openrouter';
 
@@ -65,5 +66,12 @@ export const OpenAiStore = {
     if (stored === 'gpt-4') return 'openai/gpt-4';
     
     return stored || 'openai/gpt-4';
+  },
+  setImageModel(value: string): void {
+    EditorSettings.instance.set(AI_ASSISTANT_IMAGE_MODEL_KEY, value);
+  },
+  getImageModel(): string {
+    const stored = EditorSettings.instance.get(AI_ASSISTANT_IMAGE_MODEL_KEY);
+    return stored || 'black-forest-labs/flux-schnell-free';
   }
 };
