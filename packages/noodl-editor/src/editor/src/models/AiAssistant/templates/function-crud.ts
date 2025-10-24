@@ -27,6 +27,17 @@ export const template: AiNodeTemplate = {
     const dbCollectionsSource = await extractDatabaseSchema();
     console.log('database schema', dbCollectionsSource);
 
+    // Check if database schema exists
+    if (!dbCollectionsSource || dbCollectionsSource.trim().length === 0) {
+      chatHistory.removeActivity(activityCodeGenId);
+      chatHistory.removeActivity(activityId);
+      chatHistory.add({
+        type: ChatMessageType.Assistant,
+        content: 'No database found. Please set up your database first in the project settings.'
+      });
+      return;
+    }
+
     // Set the parameter
     // node.setParameter('functionScript', codeText);
 
