@@ -4,12 +4,33 @@ import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 import { AiCopilotChatProviders, AiCopilotChatStreamArgs } from '@noodl-models/AiAssistant/interfaces';
 
+// Retry configuration with exponential backoff
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+  jitterMs: 500
+};
+
 function toChatProvider(provider: AiCopilotChatProviders | undefined) {
   return {
     model: provider?.model || 'openai/gpt-4',
     temperature: provider?.temperature,
     max_tokens: provider?.max_tokens
   };
+}
+
+/**
+ * Calculate exponential backoff delay with jitter
+ */
+function calculateRetryDelay(attemptNumber: number): number {
+  const delay = Math.min(
+    RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attemptNumber),
+    RETRY_CONFIG.maxDelayMs
+  );
+  const jitter = Math.random() * RETRY_CONFIG.jitterMs;
+  return delay + jitter;
 }
 
 async function directChatOpenAi({ messages, provider, abortController, onEnd, onStream }: AiCopilotChatStreamArgs) {
@@ -20,7 +41,9 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
   let fullText = '';
   let completionTokenCount = 0;
 
-  let tries = 2;
+  let tries = RETRY_CONFIG.maxRetries;
+  let currentAttempt = 0;
+  
   await fetchEventSource(endpoint, {
     method: 'POST',
     openWhenHidden: true,
@@ -69,7 +92,7 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
     },
     onerror(err) {
       const errText = err.toString();
-      console.error('AI API error:', err);
+      console.error(`AI API error (attempt ${currentAttempt + 1}/${RETRY_CONFIG.maxRetries}):`, err);
       
       if (['FatalError'].includes(errText)) {
         // 4xx errors (except 429) - don't retry
@@ -82,13 +105,24 @@ async function directChatOpenAi({ messages, provider, abortController, onEnd, on
           throw `Apologies, the AI service is currently facing heavy traffic, causing delays in processing requests. Please be patient and try again later.`;
         }
         tries--;
+        currentAttempt++;
+        
+        // Return delay in milliseconds for exponential backoff
+        const delay = calculateRetryDelay(currentAttempt);
+        console.log(`Retrying API request in ${Math.round(delay)}ms (${tries} attempts remaining)...`);
+        return delay;
       } else {
-        // Unknown errors - retry
+        // Unknown errors - retry with backoff
         if (tries <= 0) {
           ToastLayer.showError('Network connection failed. Please check your internet connection.');
+          throw err;
         }
-        // do nothing to automatically retry. You can also
-        // return a specific retry interval here.
+        tries--;
+        currentAttempt++;
+        
+        const delay = calculateRetryDelay(currentAttempt);
+        console.log(`Retrying after error in ${Math.round(delay)}ms...`);
+        return delay;
       }
     }
   });
