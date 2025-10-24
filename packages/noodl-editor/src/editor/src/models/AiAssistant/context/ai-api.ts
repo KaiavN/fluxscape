@@ -1,6 +1,6 @@
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
-import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
+import ToastLayer from '@noodl-views/ToastLayer';
 
 import { AiCopilotChatProviders, AiCopilotChatStreamArgs } from '@noodl-models/AiAssistant/interfaces';
 

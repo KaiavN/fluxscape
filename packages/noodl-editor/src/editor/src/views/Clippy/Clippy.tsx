@@ -621,7 +621,7 @@ export default function Clippy() {
 }
 
 // Wrap child components with React.memo to prevent unnecessary re-renders
-const SectionTitle = React.memo(function SectionTitle({ title }) {
+const SectionTitle = React.memo(function SectionTitle({ title }: SectionTitleProps) {
   return (
     <div className={css.SectionTitle}>
       <Label variant={TextType.Shy} size={LabelSize.Small}>
@@ -639,6 +639,21 @@ interface PopupItemProps {
   isHighlighted?: boolean;
   isDisabled?: boolean;
   onClick?: () => void;
+}
+
+interface SectionTitleProps {
+  title: string;
+}
+
+interface PromptTagProps {
+  title: string;
+  type: PopupItemType;
+  onRemoveClick: () => void;
+}
+
+interface ExamplePromptProps {
+  prompt: string;
+  onClick: () => void;
 }
 
 const PromptTagSuggestion = React.memo(function PromptTagSuggestion({ title, description, type, icon, isHighlighted, isDisabled, onClick }: PopupItemProps) {
@@ -671,7 +686,7 @@ const PromptTagSuggestion = React.memo(function PromptTagSuggestion({ title, des
   );
 });
 
-const PromptTag = React.memo(function PromptTag({ title, type, onRemoveClick }) {
+const PromptTag = React.memo(function PromptTag({ title, type, onRemoveClick }: PromptTagProps) {
   return (
     <div className={classNames(css.PromptTagRoot, css[type])}>
       <Label size={LabelSize.Small} variant={TextType.DefaultContrast}>
@@ -685,7 +700,7 @@ const PromptTag = React.memo(function PromptTag({ title, type, onRemoveClick }) 
   );
 });
 
-const ExamplePrompt = React.memo(function ExamplePrompt({ prompt, onClick }) {
+const ExamplePrompt = React.memo(function ExamplePrompt({ prompt, onClick }: ExamplePromptProps) {
   return (
     <div className={css.ExamplePromptRoot}>
       <div className={css.ExamplePrompt} onClick={onClick}>

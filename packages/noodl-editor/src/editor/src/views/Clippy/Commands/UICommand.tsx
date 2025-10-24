@@ -1,6 +1,6 @@
 import { NodeGraphContextTmp } from '@noodl-contexts/NodeGraphContext/NodeGraphContext';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
-import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
+import ToastLayer from '@noodl-views/ToastLayer';
 
 import { AiCopilotContext } from '@noodl-models/AiAssistant/AiCopilotContext';
 import { NodeGraphModel, NodeGraphNode, NodeGraphNodeJSON } from '@noodl-models/nodegraphmodel';
