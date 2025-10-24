@@ -1,4 +1,5 @@
 import SchemaHandler from '@noodl-utils/schemahandler';
+import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
 
 export async function extractDatabaseSchema() {
   const schema = SchemaHandler.instance;
@@ -8,9 +9,18 @@ export async function extractDatabaseSchema() {
     try {
       await schema._fetch();
     } catch (error) {
-      // lets ignore it then...
-      console.error(error);
+      console.error('Failed to fetch database schema:', error);
+      ToastLayer.showError(
+        'Failed to load database schema. AI features requiring database access may not work correctly. Please check your database connection.'
+      );
+      return ''; // Return empty string to signal no schema available
     }
+  }
+
+  // Check if we have any collections
+  if (!schema.dbCollections || schema.dbCollections.length === 0) {
+    console.warn('Database schema loaded but no collections found');
+    return '';
   }
 
   const dbCollectionsSource =
@@ -52,9 +62,18 @@ export async function extractDatabaseSchemaJSON(): Promise<{ name: string; schem
     try {
       await schema._fetch();
     } catch (error) {
-      // lets ignore it then...
-      console.error(error);
+      console.error('Failed to fetch database schema JSON:', error);
+      ToastLayer.showError(
+        'Failed to load database schema. AI features requiring database access may not work correctly. Please check your database connection.'
+      );
+      return []; // Return empty array to signal no schema available
     }
+  }
+
+  // Check if we have any collections
+  if (!schema.dbCollections || Object.keys(schema.dbCollections).length === 0) {
+    console.warn('Database schema loaded but no collections found');
+    return [];
   }
 
   return Object.keys(schema.dbCollections).map((key) => schema.dbCollections[key]);
