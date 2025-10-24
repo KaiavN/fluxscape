@@ -58,6 +58,23 @@ export const promptToNodeCommands: CommandMetadata[] = [
       'Four kittens with cool sunshades',
       'The worlds fastest car on holiday'
     ]
+  },
+  {
+    title: '/Format',
+    tag: 'Format Prompt',
+    description: 'Improve formatting and styling of existing nodes',
+    placeholder: 'How should it be formatted?',
+    type: PopupItemType.Visual,
+    icon: IconName.UI,
+    availableOnFrontend: true,
+    availableOnBackend: false,
+    requireGPT4: true,
+    examples: [
+      'Make colors match brand theme',
+      'Align all elements to grid',
+      'Increase spacing between buttons',
+      'Make layout more professional'
+    ]
   }
 ];
 
