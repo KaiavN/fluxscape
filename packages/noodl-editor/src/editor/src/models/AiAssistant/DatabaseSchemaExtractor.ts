@@ -1,5 +1,5 @@
 import SchemaHandler from '@noodl-utils/schemahandler';
-import { ToastLayer } from '@noodl-views/ToastLayer/ToastLayer';
+import ToastLayer from '@noodl-views/ToastLayer';
 
 /**
  * Database schema property definition
