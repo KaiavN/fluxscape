@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
 import { filesystem } from '@noodl/platform';
-import { ToastLayer } from '@noodl-views/ToastLayer';
+import { ToastLayer } from '../../ToastLayer';
 
 import { ProjectModel } from '@noodl-models/projectmodel';
 import FileSystem from '@noodl-utils/filesystem';

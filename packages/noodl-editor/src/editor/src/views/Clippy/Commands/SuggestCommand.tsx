@@ -1,6 +1,6 @@
 import { NodeGraphContextTmp } from '@noodl-contexts/NodeGraphContext/NodeGraphContext';
 import { OpenAiStore } from '@noodl-store/AiAssistantStore';
-import { ToastLayer } from '@noodl-views/ToastLayer';
+import { ToastLayer } from '../../ToastLayer';
 
 import { makeChatRequest } from './utils';
 
